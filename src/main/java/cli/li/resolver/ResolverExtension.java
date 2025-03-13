@@ -11,6 +11,8 @@ import cli.li.resolver.http.HttpRequestModifier;
 import cli.li.resolver.settings.SettingsManager;
 import cli.li.resolver.stats.RequestStatsTracker;
 import cli.li.resolver.stats.StatisticsCollector;
+import cli.li.resolver.logger.LoggerService;
+import cli.li.resolver.logger.BurpLoggerAdapter;
 
 /**
  * ResolverExtension is the main entry point for the reSolver Burp Suite extension.
@@ -31,49 +33,74 @@ public class ResolverExtension implements BurpExtension {
     private HighLoadDetector highLoadDetector;
     private ThreadPoolManager threadPoolManager;
     private QueueManager queueManager;
+    private BurpLoggerAdapter logger;
 
     @Override
     public void initialize(MontoyaApi api) {
         this.api = api;
         api.extension().setName("reSolver - CAPTCHA solver for Burp Suite");
 
+        // Initialize logger adapter immediately after API is set
+        logger = BurpLoggerAdapter.getInstance();
+        logger.initialize();
+
+        logger.info("ResolverExtension", "Starting reSolver extension initialization");
+
         // Initialize components
         initializeComponents();
 
         // Register HTTP handler
         api.http().registerHttpHandler(requestModifier);
+        logger.info("ResolverExtension", "HTTP handler registered");
 
         // Add extension tab to Burp UI
         api.userInterface().registerSuiteTab("reSolver", uiManager.getUI());
+        logger.info("ResolverExtension", "UI tab registered");
 
-        api.logging().logToOutput("reSolver extension has been loaded");
+        logger.info("ResolverExtension", "reSolver extension has been loaded successfully");
     }
 
     private void initializeComponents() {
+        logger.info("ResolverExtension", "Initializing components");
+
         // Initialize settings manager
         settingsManager = new SettingsManager(api);
+        logger.info("ResolverExtension", "Settings manager initialized");
 
         // Initialize thread management components
         threadPoolManager = new ThreadPoolManager(settingsManager);
+        logger.info("ResolverExtension", "Thread pool manager initialized with size: " + threadPoolManager.getPoolSize());
+
         queueManager = new QueueManager(settingsManager);
+        logger.info("ResolverExtension", "Queue manager initialized with size: " + settingsManager.getQueueSize());
+
         highLoadDetector = new HighLoadDetector(settingsManager);
+        logger.info("ResolverExtension", "High load detector initialized with threshold: " + settingsManager.getHighLoadThreshold());
+
         threadManager = new CaptchaSolverThreadManager(threadPoolManager, queueManager, highLoadDetector);
+        logger.info("ResolverExtension", "Thread manager initialized");
 
         // Initialize services
         serviceRegistry = new CaptchaServiceRegistry();
         registerDefaultServices();
+        logger.info("ResolverExtension", "CAPTCHA services registered");
+
         serviceManager = new ServiceManager(serviceRegistry, settingsManager);
+        logger.info("ResolverExtension", "Service manager initialized");
 
         // Initialize statistics components
         statsTracker = new RequestStatsTracker();
         statisticsCollector = new StatisticsCollector(serviceManager);
+        logger.info("ResolverExtension", "Statistics components initialized");
 
         // Initialize HTTP processing components
         placeholderParser = new PlaceholderParser();
         requestModifier = new HttpRequestModifier(serviceManager, threadManager, placeholderParser, statisticsCollector);
+        logger.info("ResolverExtension", "HTTP processing components initialized");
 
         // Initialize UI
         uiManager = new UIManager(api, serviceManager, settingsManager, statisticsCollector, threadManager);
+        logger.info("ResolverExtension", "UI manager initialized");
     }
 
     private void registerDefaultServices() {
@@ -81,5 +108,7 @@ public class ResolverExtension implements BurpExtension {
         serviceRegistry.registerService(new TwoCaptchaService());
         serviceRegistry.registerService(new AntiCaptchaService());
         serviceRegistry.registerService(new CapMonsterService());
+
+        logger.info("ResolverExtension", "Default CAPTCHA services registered: 2Captcha, AntiCaptcha, CapMonster");
     }
 }

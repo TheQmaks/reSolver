@@ -6,6 +6,7 @@ import cli.li.resolver.captcha.ICaptchaService;
 import cli.li.resolver.captcha.ICaptchaSolver;
 import cli.li.resolver.captcha.ServiceConfig;
 import cli.li.resolver.settings.SettingsManager;
+import cli.li.resolver.logger.BurpLoggerAdapter;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -16,10 +17,14 @@ import java.util.stream.Collectors;
 public class ServiceManager {
     private final CaptchaServiceRegistry serviceRegistry;
     private final SettingsManager settingsManager;
+    private final BurpLoggerAdapter logger;
 
     public ServiceManager(CaptchaServiceRegistry serviceRegistry, SettingsManager settingsManager) {
         this.serviceRegistry = serviceRegistry;
         this.settingsManager = settingsManager;
+        this.logger = BurpLoggerAdapter.getInstance();
+
+        logger.info("ServiceManager", "Service manager initialized");
 
         // Load service configurations from settings
         loadServiceConfigs();
@@ -29,6 +34,7 @@ public class ServiceManager {
      * Load service configurations from settings
      */
     private void loadServiceConfigs() {
+        logger.info("ServiceManager", "Loading service configurations from settings");
         Map<String, ServiceConfig> configs = settingsManager.loadServiceConfigs();
 
         // Apply configurations to services
@@ -38,6 +44,22 @@ public class ServiceManager {
                 service.setApiKey(config.getApiKey());
                 service.setEnabled(config.isEnabled());
                 service.setPriority(config.getPriority());
+
+                // Mask API key for logging
+                String maskedApiKey = config.getApiKey().isEmpty() ? "(empty)" :
+                        config.getApiKey().length() > 8 ?
+                                config.getApiKey().substring(0, 4) + "..." +
+                                        config.getApiKey().substring(config.getApiKey().length() - 4) :
+                                "****";
+
+                logger.info("ServiceManager", "Configured service: " + service.getName() +
+                        " (ID: " + service.getId() + "), " +
+                        "API key: " + maskedApiKey + ", " +
+                        "enabled: " + config.isEnabled() + ", " +
+                        "priority: " + config.getPriority());
+            } else {
+                logger.info("ServiceManager", "No saved configuration for service: " + service.getName() +
+                        " (ID: " + service.getId() + "), using defaults");
             }
         }
     }
@@ -46,6 +68,7 @@ public class ServiceManager {
      * Save service configurations to settings
      */
     public void saveServiceConfigs() {
+        logger.info("ServiceManager", "Saving service configurations to settings");
         Map<String, ServiceConfig> configs = new HashMap<>();
 
         // Create configurations from services
@@ -56,9 +79,23 @@ public class ServiceManager {
                     service.getPriority()
             );
             configs.put(service.getId(), config);
+
+            // Mask API key for logging
+            String maskedApiKey = service.getApiKey().isEmpty() ? "(empty)" :
+                    service.getApiKey().length() > 8 ?
+                            service.getApiKey().substring(0, 4) + "..." +
+                                    service.getApiKey().substring(service.getApiKey().length() - 4) :
+                            "****";
+
+            logger.info("ServiceManager", "Saving configuration for service: " + service.getName() +
+                    " (ID: " + service.getId() + "), " +
+                    "API key: " + maskedApiKey + ", " +
+                    "enabled: " + service.isEnabled() + ", " +
+                    "priority: " + service.getPriority());
         }
 
         settingsManager.saveServiceConfigs(configs);
+        logger.info("ServiceManager", "Service configurations saved successfully");
     }
 
     /**
@@ -66,10 +103,13 @@ public class ServiceManager {
      * @return List of services sorted by priority
      */
     public List<ICaptchaService> getServicesInPriorityOrder() {
-        return serviceRegistry.getAllServices().stream()
+        List<ICaptchaService> services = serviceRegistry.getAllServices().stream()
                 .filter(ICaptchaService::isEnabled)
                 .sorted(Comparator.comparingInt(ICaptchaService::getPriority))
                 .collect(Collectors.toList());
+
+        logger.debug("ServiceManager", "Retrieved " + services.size() + " enabled services in priority order");
+        return services;
     }
 
     /**
@@ -79,12 +119,18 @@ public class ServiceManager {
      * @return CAPTCHA solver or null if no service can solve it
      */
     public ICaptchaSolver getSolverForType(CaptchaType captchaType) {
+        logger.info("ServiceManager", "Looking for solver for CAPTCHA type: " + captchaType);
+
         for (ICaptchaService service : getServicesInPriorityOrder()) {
             ICaptchaSolver solver = service.getSolver(captchaType);
             if (solver != null) {
+                logger.info("ServiceManager", "Found solver for " + captchaType +
+                        " using service: " + service.getName() + " (priority: " + service.getPriority() + ")");
                 return solver;
             }
         }
+
+        logger.warning("ServiceManager", "No solver found for CAPTCHA type: " + captchaType);
         return null;
     }
 
@@ -93,22 +139,37 @@ public class ServiceManager {
      * @return true if at least one service is properly configured
      */
     public boolean hasConfiguredServices() {
-        return serviceRegistry.getAllServices().stream()
+        boolean hasConfigured = serviceRegistry.getAllServices().stream()
                 .anyMatch(service -> service.isEnabled() && service.validateApiKey());
+
+        if (!hasConfigured) {
+            logger.warning("ServiceManager", "No properly configured CAPTCHA services found");
+        } else {
+            logger.debug("ServiceManager", "Found properly configured CAPTCHA services");
+        }
+
+        return hasConfigured;
     }
 
     /**
      * Check and update balances for all enabled services
      */
     public void updateAllBalances() {
+        logger.info("ServiceManager", "Updating balances for all enabled services");
+
         for (ICaptchaService service : serviceRegistry.getAllServices()) {
             if (service.isEnabled()) {
                 try {
+                    logger.info("ServiceManager", "Checking balance for service: " + service.getName());
                     service.getBalance(); // This will update the balance internally
-                } catch (Exception ignored) {
+                    logger.info("ServiceManager", "Balance for " + service.getName() + ": " + service.getBalance());
+                } catch (Exception e) {
+                    logger.error("ServiceManager", "Error checking balance for " + service.getName() + ": " + e.getMessage(), e);
                     // Ignore exceptions during balance check
                 }
             }
         }
+
+        logger.info("ServiceManager", "All balances updated");
     }
 }
