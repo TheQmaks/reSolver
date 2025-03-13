@@ -20,38 +20,41 @@ public class HelpPanel extends JPanel {
                         "To use the extension, you need to:\n\n" +
                         "1. Configure at least one CAPTCHA solving service in the Services tab\n" +
                         "2. Add CAPTCHA placeholders to your HTTP requests\n\n" +
-                        "The extension will automatically detect and solve CAPTCHAs when requests are sent through Burp Suite."
+                        "The extension will automatically detect and solve CAPTCHAs when requests are sent through Burp Suite. " +
+                        "You can monitor the CAPTCHA solving process in the Logs tab."
         );
 
-        // Placeholder format - ИЗМЕНЕНО для формата [:]
+        // Placeholder format
         JPanel placeholderPanel = createHelpPanel(
                 "Placeholder Format",
-                "CAPTCHA placeholders используют следующий формат:\n\n" +
+                "CAPTCHA placeholders use the following format:\n\n" +
                         "{{CAPTCHA[:]TYPE[:]SITEKEY[:]URL[:][OPTIONAL_PARAMS]}}\n\n" +
-                        "Где:\n" +
-                        "- TYPE: Тип CAPTCHA (recaptcha2, recaptcha3, hcaptcha, funcaptcha)\n" +
-                        "- SITEKEY: Ключ сайта для CAPTCHA\n" +
-                        "- URL: URL страницы, содержащей CAPTCHA\n" +
-                        "- OPTIONAL_PARAMS: Дополнительные параметры, необходимые для конкретных типов CAPTCHA\n\n" +
-                        "Примеры:\n" +
+                        "Where:\n" +
+                        "- TYPE: CAPTCHA type (recaptcha2, recaptcha3)\n" +
+                        "- SITEKEY: The site key for the CAPTCHA\n" +
+                        "- URL: URL of the page containing the CAPTCHA\n" +
+                        "- OPTIONAL_PARAMS: Additional parameters required for specific CAPTCHA types\n\n" +
+                        "Examples:\n" +
                         "{{CAPTCHA[:]recaptcha2[:]6LdSzVkUAAAAAOVH1ZRLfnzCQzYX-PZWdZjWVI1k[:]https://example.com/login}}\n" +
-                        "{{CAPTCHA[:]recaptcha3[:]6LcW00EUAAAAAOBBDw0eO0XlGT6Ixk3RqQ_qrb6X[:]https://example.com/contact[:]action=login,min_score=0.7}}\n" +
-                        "{{CAPTCHA[:]hcaptcha[:]a5f74b19-9e45-40e0-b45d-47ff91b7a6c2[:]https://example.com/register}}"
+                        "{{CAPTCHA[:]recaptcha2[:]6LdSzVkUAAAAAOVH1ZRLfnzCQzYX-PZWdZjWVI1k[:]https://example.com/login[:]is_invisible=true}}\n" +
+                        "{{CAPTCHA[:]recaptcha3[:]6LcW00EUAAAAAOBBDw0eO0XlGT6Ixk3RqQ_qrb6X[:]https://example.com/contact[:]action=login,min_score=0.7}}"
         );
 
         // Supported CAPTCHA types
         JPanel captchaTypesPanel = createHelpPanel(
                 "Supported CAPTCHA Types",
-                "reSolver supports the following CAPTCHA types:\n\n" +
+                "reSolver currently supports the following CAPTCHA types:\n\n" +
                         "- reCAPTCHA v2: Standard checkbox CAPTCHA\n" +
-                        "  Code: recaptcha2\n\n" +
+                        "  Code: recaptcha2\n" +
+                        "  Optional parameters: is_invisible (true/false)\n\n" +
                         "- reCAPTCHA v3: Invisible CAPTCHA based on behavior analysis\n" +
                         "  Code: recaptcha3\n" +
                         "  Optional parameters: action, min_score\n\n" +
-                        "- hCaptcha: Alternative CAPTCHA system\n" +
-                        "  Code: hcaptcha\n\n" +
-                        "- FunCaptcha: Interactive CAPTCHA with puzzles\n" +
-                        "  Code: funcaptcha"
+                        "reSolver uses 3 supported CAPTCHA solving services:\n" +
+                        "- 2Captcha (Default priority: 0)\n" +
+                        "- Anti-Captcha (Default priority: 1)\n" +
+                        "- CapMonster (Default priority: 2)\n\n" +
+                        "Services are used in order of their priority (lower number = higher priority)."
         );
 
         // Troubleshooting
@@ -62,13 +65,33 @@ public class HelpPanel extends JPanel {
                         "   - Check if you've configured at least one service in the Services tab\n" +
                         "   - Verify that your API keys are valid\n" +
                         "   - Ensure your placeholder format is correct\n" +
-                        "   - Check if the service has sufficient balance\n\n" +
+                        "   - Check if the service has sufficient balance\n" +
+                        "   - Check the Logs tab for error messages\n\n" +
                         "2. High load handling\n" +
                         "   - If you're sending many requests with CAPTCHAs, adjust the thread pool size and queue settings\n" +
                         "   - Consider increasing the high load threshold if needed\n\n" +
                         "3. Specific CAPTCHA type issues\n" +
-                        "   - reCAPTCHA v3: Ensure you've specified the correct action parameter\n" +
-                        "   - FunCaptcha: May require additional parameters for some implementations"
+                        "   - reCAPTCHA v2 (invisible): Add is_invisible=true parameter\n" +
+                        "   - reCAPTCHA v3: Ensure you've specified the correct action parameter"
+        );
+
+        // Logs
+        JPanel logsPanel = createHelpPanel(
+                "Logs",
+                "The Logs tab provides real-time information about the extension's operation:\n\n" +
+                        "1. Log Levels\n" +
+                        "   - DEBUG: Detailed information for debugging purposes\n" +
+                        "   - INFO: General information about normal operation\n" +
+                        "   - WARNING: Potential issues that don't prevent operation\n" +
+                        "   - ERROR: Serious problems that may affect functionality\n\n" +
+                        "2. Log Filtering\n" +
+                        "   - Filter by log level using the dropdown menu\n" +
+                        "   - Filter by source by typing in the source filter field\n\n" +
+                        "3. Log Export\n" +
+                        "   - Click the 'Export Logs' button to save logs to a file\n" +
+                        "   - Useful for troubleshooting and reporting issues\n\n" +
+                        "4. Auto-scroll\n" +
+                        "   - Enable/disable auto-scrolling to the latest log entry"
         );
 
         // Add panels to tabs
@@ -76,6 +99,7 @@ public class HelpPanel extends JPanel {
         helpTabs.addTab("Placeholder Format", placeholderPanel);
         helpTabs.addTab("CAPTCHA Types", captchaTypesPanel);
         helpTabs.addTab("Troubleshooting", troubleshootingPanel);
+        helpTabs.addTab("Logs", logsPanel);
 
         // Add tabs to main panel
         add(helpTabs, BorderLayout.CENTER);

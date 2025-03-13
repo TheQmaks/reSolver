@@ -10,6 +10,7 @@ import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.persistence.PersistedObject;
 
 import cli.li.resolver.captcha.ServiceConfig;
+import cli.li.resolver.logger.BurpLoggerAdapter;
 
 /**
  * Manager for extension settings
@@ -22,9 +23,13 @@ public class SettingsManager {
     private static final String HIGH_LOAD_THRESHOLD_KEY = EXTENSION_PREFIX + "highLoadThreshold";
 
     private final MontoyaApi api;
+    private final BurpLoggerAdapter logger;
 
     public SettingsManager(MontoyaApi api) {
         this.api = api;
+        this.logger = BurpLoggerAdapter.getInstance();
+
+        logger.info("SettingsManager", "Initializing settings manager");
 
         // Initialize default settings if they don't exist
         initializeDefaultSettings();
@@ -39,16 +44,25 @@ public class SettingsManager {
         // Default thread pool size
         if (!extensionData.childObjectKeys().contains(THREAD_POOL_SIZE_KEY)) {
             extensionData.setInteger(THREAD_POOL_SIZE_KEY, 10);
+            logger.info("SettingsManager", "Initialized default thread pool size: 10");
+        } else {
+            logger.debug("SettingsManager", "Thread pool size already set: " + extensionData.getInteger(THREAD_POOL_SIZE_KEY));
         }
 
         // Default queue size
         if (!extensionData.childObjectKeys().contains(QUEUE_SIZE_KEY)) {
             extensionData.setInteger(QUEUE_SIZE_KEY, 100);
+            logger.info("SettingsManager", "Initialized default queue size: 100");
+        } else {
+            logger.debug("SettingsManager", "Queue size already set: " + extensionData.getInteger(QUEUE_SIZE_KEY));
         }
 
         // Default high load threshold
         if (!extensionData.childObjectKeys().contains(HIGH_LOAD_THRESHOLD_KEY)) {
             extensionData.setInteger(HIGH_LOAD_THRESHOLD_KEY, 50);
+            logger.info("SettingsManager", "Initialized default high load threshold: 50");
+        } else {
+            logger.debug("SettingsManager", "High load threshold already set: " + extensionData.getInteger(HIGH_LOAD_THRESHOLD_KEY));
         }
     }
 
@@ -62,11 +76,12 @@ public class SettingsManager {
 
         // Load service configs from JSON string
         String configsJson = data.getString(SERVICE_CONFIGS_KEY);
-        api.logging().logToOutput("Loading service configs from persistence: " + configsJson);
+        logger.info("SettingsManager", "Loading service configs from persistence");
 
         if (configsJson != null && !configsJson.isEmpty()) {
             try {
                 JSONObject jsonConfigs = new JSONObject(configsJson);
+                logger.debug("SettingsManager", "Found config for " + jsonConfigs.length() + " services");
 
                 for (String serviceId : jsonConfigs.keySet()) {
                     JSONObject serviceConfig = jsonConfigs.getJSONObject(serviceId);
@@ -76,13 +91,23 @@ public class SettingsManager {
                     int priority = serviceConfig.getInt("priority");
 
                     configs.put(serviceId, new ServiceConfig(apiKey, enabled, priority));
-                    api.logging().logToOutput("Loaded config for service: " + serviceId + ", API key: " + apiKey);
+
+                    // Mask API key for logging
+                    String maskedApiKey = apiKey.isEmpty() ? "(empty)" :
+                            apiKey.length() > 8 ?
+                                    apiKey.substring(0, 4) + "..." + apiKey.substring(apiKey.length() - 4) :
+                                    "****";
+
+                    logger.info("SettingsManager", "Loaded config for service: " + serviceId +
+                            ", API key: " + maskedApiKey +
+                            ", enabled: " + enabled +
+                            ", priority: " + priority);
                 }
             } catch (JSONException e) {
-                api.logging().logToError("Error parsing service configs: " + e.getMessage());
+                logger.error("SettingsManager", "Error parsing service configs: " + e.getMessage(), e);
             }
         } else {
-            api.logging().logToOutput("No saved service configurations found");
+            logger.info("SettingsManager", "No saved service configurations found");
         }
 
         return configs;
@@ -94,6 +119,7 @@ public class SettingsManager {
      */
     public void saveServiceConfigs(Map<String, ServiceConfig> configs) {
         PersistedObject data = api.persistence().extensionData();
+        logger.info("SettingsManager", "Saving service configurations for " + configs.size() + " services");
 
         // Serialize configs to JSON
         JSONObject jsonConfigs = new JSONObject();
@@ -109,16 +135,27 @@ public class SettingsManager {
                 serviceConfig.put("priority", config.getPriority());
 
                 jsonConfigs.put(serviceId, serviceConfig);
-                api.logging().logToOutput("Saving config for service: " + serviceId + ", API key: " + config.getApiKey());
+
+                // Mask API key for logging
+                String maskedApiKey = config.getApiKey().isEmpty() ? "(empty)" :
+                        config.getApiKey().length() > 8 ?
+                                config.getApiKey().substring(0, 4) + "..." +
+                                        config.getApiKey().substring(config.getApiKey().length() - 4) :
+                                "****";
+
+                logger.info("SettingsManager", "Saving config for service: " + serviceId +
+                        ", API key: " + maskedApiKey +
+                        ", enabled: " + config.isEnabled() +
+                        ", priority: " + config.getPriority());
             } catch (JSONException e) {
-                api.logging().logToError("Error serializing config for service " + serviceId + ": " + e.getMessage());
+                logger.error("SettingsManager", "Error serializing config for service " + serviceId + ": " + e.getMessage(), e);
             }
         }
 
         // Save as a single JSON string
         String configsJson = jsonConfigs.toString();
         data.setString(SERVICE_CONFIGS_KEY, configsJson);
-        api.logging().logToOutput("Saved service configs to persistence: " + configsJson);
+        logger.info("SettingsManager", "Service configurations saved successfully");
     }
 
     /**
@@ -126,8 +163,13 @@ public class SettingsManager {
      * @return Thread pool size
      */
     public int getThreadPoolSize() {
-        return Optional.ofNullable(api.persistence().extensionData().getInteger(THREAD_POOL_SIZE_KEY))
-                .orElse(10);
+        Integer size = api.persistence().extensionData().getInteger(THREAD_POOL_SIZE_KEY);
+        int defaultSize = 10;
+        if (size == null) {
+            logger.warning("SettingsManager", "Thread pool size not found, using default: " + defaultSize);
+            return defaultSize;
+        }
+        return size;
     }
 
     /**
@@ -136,6 +178,7 @@ public class SettingsManager {
      */
     public void setThreadPoolSize(int size) {
         api.persistence().extensionData().setInteger(THREAD_POOL_SIZE_KEY, size);
+        logger.info("SettingsManager", "Thread pool size updated to: " + size);
     }
 
     /**
@@ -143,8 +186,13 @@ public class SettingsManager {
      * @return Queue size
      */
     public int getQueueSize() {
-        return Optional.ofNullable(api.persistence().extensionData().getInteger(QUEUE_SIZE_KEY))
-                .orElse(100);
+        Integer size = api.persistence().extensionData().getInteger(QUEUE_SIZE_KEY);
+        int defaultSize = 100;
+        if (size == null) {
+            logger.warning("SettingsManager", "Queue size not found, using default: " + defaultSize);
+            return defaultSize;
+        }
+        return size;
     }
 
     /**
@@ -153,6 +201,7 @@ public class SettingsManager {
      */
     public void setQueueSize(int size) {
         api.persistence().extensionData().setInteger(QUEUE_SIZE_KEY, size);
+        logger.info("SettingsManager", "Queue size updated to: " + size);
     }
 
     /**
@@ -160,8 +209,13 @@ public class SettingsManager {
      * @return High load threshold
      */
     public int getHighLoadThreshold() {
-        return Optional.ofNullable(api.persistence().extensionData().getInteger(HIGH_LOAD_THRESHOLD_KEY))
-                .orElse(50);
+        Integer threshold = api.persistence().extensionData().getInteger(HIGH_LOAD_THRESHOLD_KEY);
+        int defaultThreshold = 50;
+        if (threshold == null) {
+            logger.warning("SettingsManager", "High load threshold not found, using default: " + defaultThreshold);
+            return defaultThreshold;
+        }
+        return threshold;
     }
 
     /**
@@ -170,5 +224,6 @@ public class SettingsManager {
      */
     public void setHighLoadThreshold(int threshold) {
         api.persistence().extensionData().setInteger(HIGH_LOAD_THRESHOLD_KEY, threshold);
+        logger.info("SettingsManager", "High load threshold updated to: " + threshold);
     }
 }
