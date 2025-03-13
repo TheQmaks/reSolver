@@ -9,7 +9,7 @@ import org.json.JSONException;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.persistence.PersistedObject;
 
-import cli.li.resolver.captcha.ServiceConfig;
+import cli.li.resolver.captcha.model.ServiceConfig;
 
 /**
  * Manager for extension settings

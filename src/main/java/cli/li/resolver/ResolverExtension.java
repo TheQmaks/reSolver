@@ -6,6 +6,9 @@ import burp.api.montoya.BurpExtension;
 import cli.li.resolver.logger.LoggerService;
 import cli.li.resolver.thread.*;
 import cli.li.resolver.service.*;
+import cli.li.resolver.service.captcha.TwoCaptchaService;
+import cli.li.resolver.service.captcha.AntiCaptchaService;
+import cli.li.resolver.service.captcha.CapMonsterService;
 import cli.li.resolver.ui.UIManager;
 import cli.li.resolver.http.PlaceholderParser;
 import cli.li.resolver.http.HttpRequestModifier;
@@ -75,7 +78,7 @@ public class ResolverExtension implements BurpExtension {
         highLoadDetector = new HighLoadDetector(settingsManager);
         logger.info("ResolverExtension", "High load detector initialized with threshold: " + settingsManager.getHighLoadThreshold());
 
-        threadManager = new CaptchaSolverThreadManager(threadPoolManager, queueManager, highLoadDetector);
+        threadManager = new CaptchaSolverThreadManager(threadPoolManager, queueManager, highLoadDetector, logger);
         logger.info("ResolverExtension", "Thread manager initialized");
 
         // Initialize services

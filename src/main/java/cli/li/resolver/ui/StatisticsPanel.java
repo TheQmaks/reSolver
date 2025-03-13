@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.ArrayList;
 import javax.swing.table.AbstractTableModel;
 
-import cli.li.resolver.captcha.CaptchaType;
+import cli.li.resolver.captcha.model.CaptchaType;
 import cli.li.resolver.stats.StatisticsCollector;
 
 /**

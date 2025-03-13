@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
-import cli.li.resolver.captcha.ICaptchaService;
+import cli.li.resolver.service.captcha.ICaptchaService;
 
 /**
  * Registry for available CAPTCHA services

@@ -11,7 +11,7 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 
 import cli.li.resolver.service.ServiceManager;
-import cli.li.resolver.captcha.ICaptchaService;
+import cli.li.resolver.service.captcha.ICaptchaService;
 
 /**
  * Panel for CAPTCHA service management

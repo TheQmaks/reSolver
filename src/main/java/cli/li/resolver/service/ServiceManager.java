@@ -1,9 +1,9 @@
 package cli.li.resolver.service;
 
-import cli.li.resolver.captcha.CaptchaType;
-import cli.li.resolver.captcha.ICaptchaService;
-import cli.li.resolver.captcha.ICaptchaSolver;
-import cli.li.resolver.captcha.ServiceConfig;
+import cli.li.resolver.captcha.model.CaptchaType;
+import cli.li.resolver.service.captcha.ICaptchaService;
+import cli.li.resolver.captcha.solver.ICaptchaSolver;
+import cli.li.resolver.captcha.model.ServiceConfig;
 import cli.li.resolver.logger.LoggerService;
 import cli.li.resolver.settings.SettingsManager;
 

@@ -7,8 +7,8 @@ import java.util.regex.Pattern;
 import burp.api.montoya.http.message.HttpHeader;
 import burp.api.montoya.http.message.requests.HttpRequest;
 
-import cli.li.resolver.captcha.CaptchaType;
-import cli.li.resolver.captcha.CaptchaRequest;
+import cli.li.resolver.captcha.model.CaptchaType;
+import cli.li.resolver.captcha.model.CaptchaRequest;
 import cli.li.resolver.logger.LoggerService;
 
 /**
@@ -134,8 +134,8 @@ public class PlaceholderParser {
             }
         }
 
-        // Create CAPTCHA request
-        CaptchaRequest captchaRequest = new CaptchaRequest(captchaType, siteKey, url, additionalParams);
+        // Create CAPTCHA request with parameters in the correct order
+        CaptchaRequest captchaRequest = new CaptchaRequest(siteKey, url, additionalParams, captchaType);
 
         PlaceholderLocation location = new PlaceholderLocation(
                 fullMatch,

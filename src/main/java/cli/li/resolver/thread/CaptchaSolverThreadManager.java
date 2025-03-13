@@ -2,20 +2,18 @@ package cli.li.resolver.thread;
 
 import java.util.concurrent.*;
 
-import cli.li.resolver.captcha.CaptchaRequest;
-import cli.li.resolver.captcha.ICaptchaSolver;
-import cli.li.resolver.captcha.CaptchaSolverException;
+import cli.li.resolver.captcha.model.CaptchaRequest;
+import cli.li.resolver.captcha.solver.ICaptchaSolver;
+import cli.li.resolver.captcha.exception.CaptchaSolverException;
 import cli.li.resolver.logger.LoggerService;
 
 /**
  * Manager for CAPTCHA solver threads
  */
 public record CaptchaSolverThreadManager(ThreadPoolManager threadPoolManager, QueueManager queueManager,
-                                         HighLoadDetector highLoadDetector) {
-    private static LoggerService logger;
+                                         HighLoadDetector highLoadDetector, LoggerService logger) {
 
     public CaptchaSolverThreadManager {
-        this.logger = logger;
         logger.info("CaptchaSolverThreadManager", "Thread manager initialized");
     }
 

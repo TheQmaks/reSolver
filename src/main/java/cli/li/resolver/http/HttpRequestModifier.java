@@ -6,11 +6,11 @@ import burp.api.montoya.http.handler.*;
 import burp.api.montoya.http.message.HttpHeader;
 import burp.api.montoya.http.message.requests.HttpRequest;
 
-import cli.li.resolver.captcha.CaptchaRequest;
-import cli.li.resolver.captcha.ICaptchaSolver;
+import cli.li.resolver.captcha.model.CaptchaRequest;
+import cli.li.resolver.captcha.solver.ICaptchaSolver;
 import cli.li.resolver.service.ServiceManager;
 import cli.li.resolver.stats.StatisticsCollector;
-import cli.li.resolver.captcha.CaptchaSolverException;
+import cli.li.resolver.captcha.exception.CaptchaSolverException;
 import cli.li.resolver.thread.CaptchaSolverThreadManager;
 
 /**

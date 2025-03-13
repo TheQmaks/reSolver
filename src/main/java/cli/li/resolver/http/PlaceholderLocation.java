@@ -1,6 +1,6 @@
 package cli.li.resolver.http;
 
-import cli.li.resolver.captcha.CaptchaRequest;
+import cli.li.resolver.captcha.model.CaptchaRequest;
 
 /**
  * Class representing a placeholder location in a request
