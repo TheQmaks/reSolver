@@ -4,10 +4,10 @@ import java.util.Map;
 import java.util.HashMap;
 import java.math.BigDecimal;
 
+import cli.li.resolver.logger.LoggerService;
 import org.json.JSONObject;
 
 import cli.li.resolver.captcha.*;
-import cli.li.resolver.logger.BurpLoggerAdapter;
 
 /**
  * Implementation of CapMonster service for solving CAPTCHAs
@@ -29,10 +29,10 @@ public class CapMonsterService implements ICaptchaService {
     private BigDecimal balance = BigDecimal.ZERO;
     private final CaptchaServiceStatistics statistics = new CaptchaServiceStatistics();
     private final Map<CaptchaType, ICaptchaSolver> solvers = new HashMap<>();
-    private final BurpLoggerAdapter logger;
+    private final LoggerService logger;
 
     public CapMonsterService() {
-        this.logger = BurpLoggerAdapter.getInstance();
+        this.logger = LoggerService.getInstance();
 
         // Initialize solvers for supported CAPTCHA types
         solvers.put(CaptchaType.RECAPTCHA_V2, new CapMonsterRecaptchaV2Solver(this));

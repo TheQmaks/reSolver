@@ -206,7 +206,7 @@ public class LoggerService {
 
         // If the logs list is too large, remove the oldest entries
         while (logs.size() > maxLogSize) {
-            logs.remove(0);
+            logs.removeFirst();
         }
 
         // Notify listeners

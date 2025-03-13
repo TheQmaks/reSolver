@@ -9,13 +9,13 @@ import burp.api.montoya.http.message.requests.HttpRequest;
 
 import cli.li.resolver.captcha.CaptchaType;
 import cli.li.resolver.captcha.CaptchaRequest;
-import cli.li.resolver.logger.BurpLoggerAdapter;
+import cli.li.resolver.logger.LoggerService;
 
 /**
  * Parser for CAPTCHA placeholders in HTTP requests
  */
 public class PlaceholderParser {
-    private final BurpLoggerAdapter logger;
+    private final LoggerService logger;
 
     // Regex pattern for CAPTCHA placeholder: {{CAPTCHA[:]TYPE[:]SITEKEY[:]URL[:][OPTIONAL_PARAMS]}}
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile(
@@ -23,7 +23,7 @@ public class PlaceholderParser {
     );
 
     public PlaceholderParser() {
-        this.logger = BurpLoggerAdapter.getInstance();
+        this.logger = LoggerService.getInstance();
         logger.info("PlaceholderParser", "Placeholder parser initialized");
     }
 

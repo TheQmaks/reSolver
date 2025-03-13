@@ -33,11 +33,15 @@ public class TwoCaptchaService implements ICaptchaService {
     private final CaptchaServiceStatistics statistics = new CaptchaServiceStatistics();
     private final Map<CaptchaType, ICaptchaSolver> solvers = new HashMap<>();
 
+    private final LoggerService logger;
+
     public TwoCaptchaService() {
+        this.logger = LoggerService.getInstance();
+
         // Initialize solvers for supported CAPTCHA types
         solvers.put(CaptchaType.RECAPTCHA_V2, new TwoCaptchaRecaptchaV2Solver(this));
         solvers.put(CaptchaType.RECAPTCHA_V3, new TwoCaptchaRecaptchaV3Solver(this));
-        LoggerService.getInstance().info("TwoCaptchaService", "Service initialized");
+        logger.info("TwoCaptchaService", "Service initialized");
     }
 
     @Override
@@ -58,7 +62,7 @@ public class TwoCaptchaService implements ICaptchaService {
     @Override
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
-        LoggerService.getInstance().info("TwoCaptchaService", "Service " + (enabled ? "enabled" : "disabled"));
+        logger.info("TwoCaptchaService", "Service " + (enabled ? "enabled" : "disabled"));
     }
 
     @Override
@@ -69,7 +73,7 @@ public class TwoCaptchaService implements ICaptchaService {
     @Override
     public void setApiKey(String apiKey) {
         this.apiKey = apiKey;
-        LoggerService.getInstance().info("TwoCaptchaService", "API key updated");
+        logger.info("TwoCaptchaService", "API key updated");
     }
 
     @Override
@@ -80,18 +84,18 @@ public class TwoCaptchaService implements ICaptchaService {
     @Override
     public void setPriority(int priority) {
         this.priority = priority;
-        LoggerService.getInstance().info("TwoCaptchaService", "Priority set to " + priority);
+        logger.info("TwoCaptchaService", "Priority set to " + priority);
     }
 
     @Override
     public BigDecimal getBalance() {
         if (!validateApiKey()) {
-            LoggerService.getInstance().warning("TwoCaptchaService", "Cannot check balance: Invalid API key");
+            logger.warning("TwoCaptchaService", "Cannot check balance: Invalid API key");
             return BigDecimal.ZERO;
         }
 
         try {
-            LoggerService.getInstance().info("TwoCaptchaService", "Checking balance");
+            logger.info("TwoCaptchaService", "Checking balance");
             BaseHttpClient httpClient = new HttpClientImpl(apiKey);
             Map<String, String> params = new HashMap<>();
             params.put("action", "getbalance");
@@ -99,10 +103,10 @@ public class TwoCaptchaService implements ICaptchaService {
 
             String response = httpClient.get(BALANCE_URL, params);
             balance = new BigDecimal(response);
-            LoggerService.getInstance().info("TwoCaptchaService", "Balance retrieved: " + balance);
+            logger.info("TwoCaptchaService", "Balance retrieved: " + balance);
             return balance;
         } catch (Exception e) {
-            LoggerService.getInstance().error("TwoCaptchaService", "Error checking balance: " + e.getMessage(), e);
+            logger.error("TwoCaptchaService", "Error checking balance: " + e.getMessage(), e);
         }
 
         return balance;
@@ -112,7 +116,7 @@ public class TwoCaptchaService implements ICaptchaService {
     public boolean validateApiKey() {
         boolean valid = apiKey != null && !apiKey.isEmpty();
         if (!valid) {
-            LoggerService.getInstance().warning("TwoCaptchaService", "API key validation failed: key is empty");
+            logger.warning("TwoCaptchaService", "API key validation failed: key is empty");
         }
         return valid;
     }
@@ -132,7 +136,7 @@ public class TwoCaptchaService implements ICaptchaService {
      */
     protected String solveCaptchaGeneric(Map<String, String> params) throws CaptchaSolverException {
         if (!validateApiKey()) {
-            LoggerService.getInstance().error("TwoCaptchaService", "Cannot solve CAPTCHA: Invalid API key");
+            logger.error("TwoCaptchaService", "Cannot solve CAPTCHA: Invalid API key");
             throw new CaptchaSolverException("Invalid API key");
         }
 
@@ -141,21 +145,21 @@ public class TwoCaptchaService implements ICaptchaService {
 
             // Send CAPTCHA for solving
             params.put("json", "0"); // Response in text format
-            LoggerService.getInstance().info("TwoCaptchaService", "Sending CAPTCHA to 2Captcha API");
-            LoggerService.getInstance().debug("TwoCaptchaService", "Request parameters: " + params);
+            logger.info("TwoCaptchaService", "Sending CAPTCHA to 2Captcha API");
+            logger.debug("TwoCaptchaService", "Request parameters: " + params);
 
             String inResponse = httpClient.post(IN_URL, params);
-            LoggerService.getInstance().debug("TwoCaptchaService", "2Captcha API response: " + inResponse);
+            logger.debug("TwoCaptchaService", "2Captcha API response: " + inResponse);
 
             Matcher inMatcher = OK_PATTERN.matcher(inResponse);
             if (!inMatcher.find()) {
-                LoggerService.getInstance().error("TwoCaptchaService", "Error from 2Captcha API: " + inResponse);
+                logger.error("TwoCaptchaService", "Error from 2Captcha API: " + inResponse);
                 throw new CaptchaSolverException("Error sending CAPTCHA to 2Captcha: " + inResponse);
             }
 
             // Got task ID
             String captchaId = inMatcher.group(1);
-            LoggerService.getInstance().info("TwoCaptchaService", "CAPTCHA task created with ID: " + captchaId);
+            logger.info("TwoCaptchaService", "CAPTCHA task created with ID: " + captchaId);
 
             // Wait for solution
             Map<String, String> resParams = new HashMap<>();
@@ -169,14 +173,14 @@ public class TwoCaptchaService implements ICaptchaService {
                 Thread.sleep(POLL_INTERVAL_MS);
                 attempts++;
 
-                LoggerService.getInstance().debug("TwoCaptchaService",
+                logger.debug("TwoCaptchaService",
                         "Polling for result, attempt " + attempts + " of " + MAX_POLLS);
                 String resResponse = httpClient.get(RES_URL, resParams);
-                LoggerService.getInstance().debug("TwoCaptchaService", "Poll response: " + resResponse);
+                logger.debug("TwoCaptchaService", "Poll response: " + resResponse);
 
                 if (resResponse.contains("CAPCHA_NOT_READY")) {
                     // CAPTCHA not solved yet, continue waiting
-                    LoggerService.getInstance().debug("TwoCaptchaService", "CAPTCHA not ready yet, waiting");
+                    logger.debug("TwoCaptchaService", "CAPTCHA not ready yet, waiting");
                     continue;
                 }
 
@@ -187,26 +191,26 @@ public class TwoCaptchaService implements ICaptchaService {
                     // Truncate token for logging
                     String truncatedToken = token.length() > 20 ?
                             token.substring(0, 10) + "..." + token.substring(token.length() - 10) : token;
-                    LoggerService.getInstance().info("TwoCaptchaService",
+                    logger.info("TwoCaptchaService",
                             "CAPTCHA solved successfully, token: " + truncatedToken);
                     return token;
                 } else {
                     // Error in solving
-                    LoggerService.getInstance().error("TwoCaptchaService",
+                    logger.error("TwoCaptchaService",
                             "Error solving CAPTCHA: " + resResponse);
                     throw new CaptchaSolverException("Error solving CAPTCHA: " + resResponse);
                 }
             }
 
-            LoggerService.getInstance().error("TwoCaptchaService",
+            logger.error("TwoCaptchaService",
                     "Timeout waiting for CAPTCHA solution after " + MAX_POLLS + " attempts");
             throw new CaptchaSolverException("Timeout waiting for CAPTCHA solution");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            LoggerService.getInstance().error("TwoCaptchaService", "Solving interrupted", e);
+            logger.error("TwoCaptchaService", "Solving interrupted", e);
             throw new CaptchaSolverException("Solving interrupted", e);
         } catch (Exception e) {
-            LoggerService.getInstance().error("TwoCaptchaService", "Error solving CAPTCHA", e);
+            logger.error("TwoCaptchaService", "Error solving CAPTCHA", e);
             throw new CaptchaSolverException("Error solving CAPTCHA", e);
         }
     }
@@ -216,7 +220,7 @@ public class TwoCaptchaService implements ICaptchaService {
     private record TwoCaptchaRecaptchaV2Solver(TwoCaptchaService service) implements ICaptchaSolver {
         @Override
         public String solve(CaptchaRequest request) throws CaptchaSolverException {
-            LoggerService.getInstance().info("TwoCaptchaService",
+            service.logger.info("TwoCaptchaService",
                     "Solving reCAPTCHA v2 for site key: " + request.siteKey());
 
             Map<String, String> params = new HashMap<>();
@@ -228,11 +232,11 @@ public class TwoCaptchaService implements ICaptchaService {
             Map<String, String> additionalParams = request.additionalParams();
             if (additionalParams.containsKey("invisible")) {
                 params.put("invisible", additionalParams.get("invisible"));
-                LoggerService.getInstance().debug("TwoCaptchaService", "Using invisible reCAPTCHA mode");
+                service.logger.debug("TwoCaptchaService", "Using invisible reCAPTCHA mode");
             }
             if (additionalParams.containsKey("proxy")) {
                 params.put("proxy", additionalParams.get("proxy"));
-                LoggerService.getInstance().debug("TwoCaptchaService", "Using proxy: " + additionalParams.get("proxy"));
+                service.logger.debug("TwoCaptchaService", "Using proxy: " + additionalParams.get("proxy"));
             }
 
             return service.solveCaptchaGeneric(params);
@@ -247,7 +251,7 @@ public class TwoCaptchaService implements ICaptchaService {
     private record TwoCaptchaRecaptchaV3Solver(TwoCaptchaService service) implements ICaptchaSolver {
         @Override
         public String solve(CaptchaRequest request) throws CaptchaSolverException {
-            LoggerService.getInstance().info("TwoCaptchaService",
+            service.logger.info("TwoCaptchaService",
                     "Solving reCAPTCHA v3 for site key: " + request.siteKey());
 
             Map<String, String> params = new HashMap<>();
@@ -262,12 +266,12 @@ public class TwoCaptchaService implements ICaptchaService {
             // Default action value
             String action = additionalParams.getOrDefault("action", "verify");
             params.put("action", action);
-            LoggerService.getInstance().debug("TwoCaptchaService", "Using action: " + action);
+            service.logger.debug("TwoCaptchaService", "Using action: " + action);
 
             // Minimum score (0.3 by default)
             if (additionalParams.containsKey("min_score")) {
                 params.put("min_score", additionalParams.get("min_score"));
-                LoggerService.getInstance().debug("TwoCaptchaService",
+                service.logger.debug("TwoCaptchaService",
                         "Using min score: " + additionalParams.get("min_score"));
             }
 
