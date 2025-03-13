@@ -1,12 +1,11 @@
 package cli.li.resolver.service;
 
-import cli.li.resolver.captcha.*;
 import cli.li.resolver.captcha.CaptchaType;
 import cli.li.resolver.captcha.ICaptchaService;
 import cli.li.resolver.captcha.ICaptchaSolver;
 import cli.li.resolver.captcha.ServiceConfig;
+import cli.li.resolver.logger.LoggerService;
 import cli.li.resolver.settings.SettingsManager;
-import cli.li.resolver.logger.BurpLoggerAdapter;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -17,12 +16,12 @@ import java.util.stream.Collectors;
 public class ServiceManager {
     private final CaptchaServiceRegistry serviceRegistry;
     private final SettingsManager settingsManager;
-    private final BurpLoggerAdapter logger;
+    private final LoggerService logger;
 
     public ServiceManager(CaptchaServiceRegistry serviceRegistry, SettingsManager settingsManager) {
         this.serviceRegistry = serviceRegistry;
         this.settingsManager = settingsManager;
-        this.logger = BurpLoggerAdapter.getInstance();
+        this.logger = LoggerService.getInstance();
 
         logger.info("ServiceManager", "Service manager initialized");
 

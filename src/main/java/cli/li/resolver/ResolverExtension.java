@@ -3,6 +3,7 @@ package cli.li.resolver;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.BurpExtension;
 
+import cli.li.resolver.logger.LoggerService;
 import cli.li.resolver.thread.*;
 import cli.li.resolver.service.*;
 import cli.li.resolver.ui.UIManager;
@@ -11,8 +12,6 @@ import cli.li.resolver.http.HttpRequestModifier;
 import cli.li.resolver.settings.SettingsManager;
 import cli.li.resolver.stats.RequestStatsTracker;
 import cli.li.resolver.stats.StatisticsCollector;
-import cli.li.resolver.logger.LoggerService;
-import cli.li.resolver.logger.BurpLoggerAdapter;
 
 /**
  * ResolverExtension is the main entry point for the reSolver Burp Suite extension.
@@ -33,7 +32,7 @@ public class ResolverExtension implements BurpExtension {
     private HighLoadDetector highLoadDetector;
     private ThreadPoolManager threadPoolManager;
     private QueueManager queueManager;
-    private BurpLoggerAdapter logger;
+    private LoggerService logger;
 
     @Override
     public void initialize(MontoyaApi api) {
@@ -41,8 +40,7 @@ public class ResolverExtension implements BurpExtension {
         api.extension().setName("reSolver - CAPTCHA solver for Burp Suite");
 
         // Initialize logger adapter immediately after API is set
-        logger = BurpLoggerAdapter.getInstance();
-        logger.initialize();
+        logger = LoggerService.getInstance();
 
         logger.info("ResolverExtension", "Starting reSolver extension initialization");
 

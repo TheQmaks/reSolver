@@ -5,12 +5,11 @@ import javax.swing.*;
 
 import burp.api.montoya.MontoyaApi;
 
+import cli.li.resolver.logger.LoggerService;
 import cli.li.resolver.service.ServiceManager;
 import cli.li.resolver.settings.SettingsManager;
 import cli.li.resolver.stats.StatisticsCollector;
 import cli.li.resolver.thread.CaptchaSolverThreadManager;
-import cli.li.resolver.logger.LoggerService;
-import cli.li.resolver.logger.BurpLoggerAdapter;
 
 /**
  * Main UI manager for the extension
@@ -21,7 +20,7 @@ public class UIManager {
     private final SettingsManager settingsManager;
     private final StatisticsCollector statisticsCollector;
     private final CaptchaSolverThreadManager threadManager;
-    private final BurpLoggerAdapter logger;
+    private final LoggerService logger;
 
     private JTabbedPane tabbedPane;
     private ServicesPanel servicesPanel;
@@ -37,7 +36,7 @@ public class UIManager {
         this.settingsManager = settingsManager;
         this.statisticsCollector = statisticsCollector;
         this.threadManager = threadManager;
-        this.logger = BurpLoggerAdapter.getInstance();
+        this.logger = LoggerService.getInstance();
 
         // Log initialization of UI manager
         logger.info("UIManager", "Initializing UI components");

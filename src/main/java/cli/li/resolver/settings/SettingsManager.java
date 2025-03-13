@@ -2,15 +2,14 @@ package cli.li.resolver.settings;
 
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Optional;
 
+import cli.li.resolver.logger.LoggerService;
 import org.json.JSONObject;
 import org.json.JSONException;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.persistence.PersistedObject;
 
 import cli.li.resolver.captcha.ServiceConfig;
-import cli.li.resolver.logger.BurpLoggerAdapter;
 
 /**
  * Manager for extension settings
@@ -23,11 +22,11 @@ public class SettingsManager {
     private static final String HIGH_LOAD_THRESHOLD_KEY = EXTENSION_PREFIX + "highLoadThreshold";
 
     private final MontoyaApi api;
-    private final BurpLoggerAdapter logger;
+    private final LoggerService logger;
 
     public SettingsManager(MontoyaApi api) {
         this.api = api;
-        this.logger = BurpLoggerAdapter.getInstance();
+        this.logger = LoggerService.getInstance();
 
         logger.info("SettingsManager", "Initializing settings manager");
 
