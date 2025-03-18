@@ -4,9 +4,9 @@
 [![Java](https://img.shields.io/badge/Java-11%2B-orange)](https://www.oracle.com/java/)
 [![Burp Suite Extension](https://img.shields.io/badge/Burp%20Suite-Extension-purple)](https://portswigger.net/bappstore)
 
-A Burp Suite extension that integrates popular CAPTCHA solving services to handle various CAPTCHA types without manual intervention.  An essential tool for penetration testers and security professionals, allowing you to bypass CAPTCHA protection during web application testing.
+![reSolver Preview](https://github.com/TheQmaks/reSolver/blob/main/resources/preview.gif?raw=true)
 
-![reSolver Preview](preview.gif)
+A Burp Suite extension that integrates popular CAPTCHA solving services to handle various CAPTCHA types without manual intervention.  An essential tool for penetration testers and security professionals, allowing you to bypass CAPTCHA protection during web application testing.
 
 ## 📋 Table of Contents
 
