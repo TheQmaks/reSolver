@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.math.BigDecimal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.time.Duration;
 
 import cli.li.resolver.captcha.model.CaptchaType;
 import cli.li.resolver.captcha.exception.CaptchaSolverException;
@@ -78,7 +79,8 @@ public class TwoCaptchaService extends AbstractCaptchaService {
         params.put("action", "getbalance");
         
         logger.debug(getClass().getSimpleName(), "Sending balance check request to 2Captcha API");
-        String response = httpClient.post(BALANCE_URL, params);
+        // Use reasonable timeout for balance check to prevent hanging threads
+        String response = httpClient.post(BALANCE_URL, params, Duration.ofSeconds(5));
         logger.debug(getClass().getSimpleName(), "Received balance response from 2Captcha API");
         
         return response;

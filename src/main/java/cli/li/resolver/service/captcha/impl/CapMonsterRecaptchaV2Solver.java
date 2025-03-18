@@ -25,20 +25,27 @@ public class CapMonsterRecaptchaV2Solver implements ICaptchaSolver {
         
         // Handle additional parameters
         Map<String, String> additionalParams = request.additionalParams();
-        if (additionalParams.containsKey("is_invisible") && "true".equals(additionalParams.get("is_invisible"))) {
-            extraParams.put("isInvisible", "true");
+        
+        if (additionalParams != null) {
+            // Handle invisible reCAPTCHA
+            if (additionalParams.containsKey("invisible")) {
+                extraParams.put("invisible", "true");
+            }
+            
+            // Handle enterprise reCAPTCHA
+            if (additionalParams.containsKey("enterprise")) {
+                extraParams.put("enterprise", "true");
+            }
+            
+            // Copy any other parameters
+            for (Map.Entry<String, String> entry : additionalParams.entrySet()) {
+                if (!entry.getKey().equals("invisible") && !entry.getKey().equals("enterprise")) {
+                    extraParams.put(entry.getKey(), entry.getValue());
+                }
+            }
         }
         
-        // Add proxy if specified
-        if (additionalParams.containsKey("proxy")) {
-            extraParams.put("proxy", additionalParams.get("proxy"));
-        }
-        
-        try {
-            return service.solveRecaptchaV2(request.siteKey(), request.url(), extraParams);
-        } catch (Exception e) {
-            throw new CaptchaSolverException("Error solving reCAPTCHA v2: " + e.getMessage(), e);
-        }
+        return service.solveRecaptchaV2(request.siteKey(), request.url(), extraParams);
     }
 
     @Override

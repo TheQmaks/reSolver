@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.json.JSONObject;
 
 /**
  * Modern HTTP client implementation using Java 11 HttpClient API
@@ -34,6 +35,11 @@ public class HttpClientImpl implements BaseHttpClient {
 
     @Override
     public String post(String url, Map<String, String> params) throws Exception {
+        return post(url, params, Duration.ofSeconds(DEFAULT_TIMEOUT_SECONDS));
+    }
+    
+    @Override
+    public String post(String url, Map<String, String> params, Duration timeout) throws Exception {
         // Build form data
         String formData = buildFormData(params);
         
@@ -42,7 +48,7 @@ public class HttpClientImpl implements BaseHttpClient {
                 .uri(URI.create(url))
                 .header("User-Agent", USER_AGENT)
                 .header("Content-Type", "application/x-www-form-urlencoded")
-                .timeout(Duration.ofSeconds(DEFAULT_TIMEOUT_SECONDS))
+                .timeout(timeout)
                 .POST(HttpRequest.BodyPublishers.ofString(formData))
                 .build();
         
@@ -51,7 +57,42 @@ public class HttpClientImpl implements BaseHttpClient {
     }
 
     @Override
+    public String postJson(String url, String jsonBody) throws Exception {
+        return postJson(url, jsonBody, Duration.ofSeconds(DEFAULT_TIMEOUT_SECONDS));
+    }
+    
+    @Override
+    public String postJson(String url, String jsonBody, Duration timeout) throws Exception {
+        // Create POST request with JSON body
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("User-Agent", USER_AGENT)
+                .header("Content-Type", "application/json")
+                .timeout(timeout)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+        
+        // Send request and handle response
+        return sendRequest(request);
+    }
+    
+    @Override
+    public String postJson(String url, JSONObject jsonObject) throws Exception {
+        return postJson(url, jsonObject.toString());
+    }
+    
+    @Override
+    public String postJson(String url, JSONObject jsonObject, Duration timeout) throws Exception {
+        return postJson(url, jsonObject.toString(), timeout);
+    }
+
+    @Override
     public String get(String url, Map<String, String> params) throws Exception {
+        return get(url, params, Duration.ofSeconds(DEFAULT_TIMEOUT_SECONDS));
+    }
+    
+    @Override
+    public String get(String url, Map<String, String> params, Duration timeout) throws Exception {
         // Create full URL with query parameters
         String fullUrl = url;
         if (!params.isEmpty()) {
@@ -62,7 +103,7 @@ public class HttpClientImpl implements BaseHttpClient {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(fullUrl))
                 .header("User-Agent", USER_AGENT)
-                .timeout(Duration.ofSeconds(DEFAULT_TIMEOUT_SECONDS))
+                .timeout(timeout)
                 .GET()
                 .build();
         
@@ -79,13 +120,18 @@ public class HttpClientImpl implements BaseHttpClient {
      * @throws InterruptedException If the operation is interrupted
      */
     private String sendRequest(HttpRequest request) throws IOException, InterruptedException {
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        
-        int statusCode = response.statusCode();
-        if (statusCode >= 200 && statusCode < 300) {
-            return response.body();
-        } else {
-            throw new IOException("HTTP error code: " + statusCode + ", response: " + response.body());
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            
+            int statusCode = response.statusCode();
+            if (statusCode >= 200 && statusCode < 300) {
+                return response.body();
+            } else {
+                throw new IOException("HTTP error code: " + statusCode + ", response: " + response.body());
+            }
+        } catch (IOException | InterruptedException e) {
+            // Rethrow but with more context
+            throw new IOException("HTTP request failed: " + request.uri() + " - " + e.getMessage(), e);
         }
     }
     

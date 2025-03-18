@@ -3,6 +3,7 @@ package cli.li.resolver.service.captcha;
 import java.util.Map;
 import java.util.HashMap;
 import java.math.BigDecimal;
+import java.time.Duration;
 
 import org.json.JSONObject;
 
@@ -22,8 +23,7 @@ public class AntiCaptchaService extends AbstractCaptchaService {
     private static final String CREATE_TASK_URL = API_BASE_URL + "createTask";
     private static final String GET_TASK_RESULT_URL = API_BASE_URL + "getTaskResult";
     private static final String GET_BALANCE_URL = API_BASE_URL + "getBalance";
-    private static final String BALANCE_URL = API_BASE_URL + "getBalance";
-
+    
     public AntiCaptchaService() {
         super();
         priority = 1; // Default priority for Anti-Captcha
@@ -70,13 +70,13 @@ public class AntiCaptchaService extends AbstractCaptchaService {
     protected String sendBalanceRequest() throws Exception {
         BaseHttpClient httpClient = new HttpClientImpl();
         
-        // Parameters for balance check
-        Map<String, String> params = new HashMap<>();
-        params.put("key", apiKey);
-        params.put("action", "getbalance");
+        // Create proper JSON request for AntiCaptcha API
+        JSONObject requestJson = new JSONObject();
+        requestJson.put("clientKey", apiKey);
         
         logger.debug(getClass().getSimpleName(), "Sending balance check request to Anti-Captcha API");
-        String response = httpClient.post(BALANCE_URL, params);
+        // Use reasonable timeout for balance check to prevent hanging threads
+        String response = httpClient.postJson(GET_BALANCE_URL, requestJson.toString(), Duration.ofSeconds(5));
         logger.debug(getClass().getSimpleName(), "Received balance response from Anti-Captcha API");
         
         return response;
@@ -110,32 +110,28 @@ public class AntiCaptchaService extends AbstractCaptchaService {
         try {
             BaseHttpClient httpClient = new HttpClientImpl();
             
-            // Add API key to parameters
-            taskParams.put("key", apiKey);
-            taskParams.put("json", "1"); // Get response in JSON format
-
-            // Create task creation request
+            // Create task creation request strictly following the API docs
             JSONObject taskJson = new JSONObject();
             for (Map.Entry<String, Object> entry : taskParams.entrySet()) {
                 taskJson.put(entry.getKey(), entry.getValue());
             }
 
+            // Create the root request object
             JSONObject requestJson = new JSONObject();
             requestJson.put("clientKey", apiKey);
             requestJson.put("task", taskJson);
 
-            // Send task creation request
-            Map<String, String> params = new HashMap<>();
-            params.put("json", requestJson.toString());
-
             logger.info(getClass().getSimpleName(), "Sending CAPTCHA to Anti-Captcha API");
             logger.debug(getClass().getSimpleName(), "Task type: " + taskJson.getString("type"));
+            logger.debug(getClass().getSimpleName(), "Request JSON: " + requestJson.toString());
 
-            String createTaskResponse = httpClient.post(getCreateTaskUrl(), params);
+            // Send task creation request using postJson
+            String createTaskResponse = httpClient.postJson(getCreateTaskUrl(), requestJson.toString());
             JSONObject createTaskJson = new JSONObject(createTaskResponse);
+            logger.debug(getClass().getSimpleName(), "Response: " + createTaskResponse);
 
             if (createTaskJson.getInt("errorId") != 0) {
-                String errorMessage = createTaskJson.getString("errorDescription");
+                String errorMessage = createTaskJson.optString("errorDescription", "Unknown error");
                 logger.error(getClass().getSimpleName(), "Error creating task: " + errorMessage);
                 throw new CaptchaSolverException("Error creating task: " + errorMessage);
             }
@@ -148,9 +144,6 @@ public class AntiCaptchaService extends AbstractCaptchaService {
             getResultJson.put("clientKey", apiKey);
             getResultJson.put("taskId", taskId);
 
-            params.clear();
-            params.put("json", getResultJson.toString());
-
             // Wait for the solution
             int attempts = 0;
             while (attempts < MAX_POLLS) {
@@ -160,11 +153,13 @@ public class AntiCaptchaService extends AbstractCaptchaService {
                 logger.debug(getClass().getSimpleName(),
                         "Polling for result, attempt " + attempts + " of " + MAX_POLLS);
 
-                String resultResponse = httpClient.post(getTaskResultUrl(), params);
+                // Send the get result request using postJson
+                String resultResponse = httpClient.postJson(getTaskResultUrl(), getResultJson.toString());
                 JSONObject resultJson = new JSONObject(resultResponse);
+                logger.debug(getClass().getSimpleName(), "Result response: " + resultResponse);
 
                 if (resultJson.getInt("errorId") != 0) {
-                    String errorMessage = resultJson.getString("errorDescription");
+                    String errorMessage = resultJson.optString("errorDescription", "Unknown error");
                     logger.error(getClass().getSimpleName(), "Error getting result: " + errorMessage);
                     throw new CaptchaSolverException("Error getting result: " + errorMessage);
                 }
@@ -172,7 +167,16 @@ public class AntiCaptchaService extends AbstractCaptchaService {
                 String status = resultJson.getString("status");
                 if ("ready".equals(status)) {
                     // CAPTCHA successfully solved
-                    String token = resultJson.getJSONObject("solution").getString("token");
+                    JSONObject solution = resultJson.getJSONObject("solution");
+                    String token;
+                    
+                    // Try to get gRecaptchaResponse first (for reCAPTCHA v2/v3)
+                    if (solution.has("gRecaptchaResponse")) {
+                        token = solution.getString("gRecaptchaResponse");
+                    } else {
+                        // Fall back to generic token field if gRecaptchaResponse is not present
+                        token = solution.getString("token");
+                    }
                     
                     // Truncate token for logging
                     String truncatedToken = token.length() > 20 ?
@@ -202,28 +206,25 @@ public class AntiCaptchaService extends AbstractCaptchaService {
 
     // Helper method for RecaptchaV2 solver
     public String solveRecaptchaV2(String siteKey, String pageUrl, Map<String, String> extraParams) throws CaptchaSolverException {
-        JSONObject taskJson = new JSONObject();
-        taskJson.put("type", "NoCaptchaTaskProxyless");
-        taskJson.put("websiteURL", pageUrl);
-        taskJson.put("websiteKey", siteKey);
+        // Create task object with proper structure
+        Map<String, Object> params = new HashMap<>();
         
-        // Add any extra parameters
+        // Create proper task object
+        JSONObject taskObj = new JSONObject();
+        taskObj.put("type", "NoCaptchaTaskProxyless");
+        taskObj.put("websiteURL", pageUrl);
+        taskObj.put("websiteKey", siteKey);
+        
+        // Add any extra parameters to task object
         if (extraParams != null) {
             for (Map.Entry<String, String> entry : extraParams.entrySet()) {
-                taskJson.put(entry.getKey(), entry.getValue());
+                taskObj.put(entry.getKey(), entry.getValue());
             }
         }
         
-        Map<String, Object> params = new HashMap<>();
-        params.put("type", taskJson.getString("type"));
-        params.put("websiteURL", taskJson.getString("websiteURL"));
-        params.put("websiteKey", taskJson.getString("websiteKey"));
-        
-        // Add other parameters
-        for (String key : taskJson.keySet()) {
-            if (!key.equals("type") && !key.equals("websiteURL") && !key.equals("websiteKey")) {
-                params.put(key, taskJson.get(key));
-            }
+        // Convert JSONObject to Map
+        for (String key : taskObj.keySet()) {
+            params.put(key, taskObj.get(key));
         }
         
         return solveCaptchaInternal(params);
@@ -231,45 +232,33 @@ public class AntiCaptchaService extends AbstractCaptchaService {
 
     // Helper method for RecaptchaV3 solver
     public String solveRecaptchaV3(String siteKey, String pageUrl, String action, Double minScore, Map<String, String> extraParams) throws CaptchaSolverException {
-        JSONObject taskJson = new JSONObject();
-        taskJson.put("type", "RecaptchaV3TaskProxyless");
-        taskJson.put("websiteURL", pageUrl);
-        taskJson.put("websiteKey", siteKey);
+        // Create task object with proper structure
+        Map<String, Object> params = new HashMap<>();
+        
+        // Create proper task object
+        JSONObject taskObj = new JSONObject();
+        taskObj.put("type", "RecaptchaV3TaskProxyless");
+        taskObj.put("websiteURL", pageUrl);
+        taskObj.put("websiteKey", siteKey);
         
         if (action != null && !action.isEmpty()) {
-            taskJson.put("pageAction", action);
+            taskObj.put("pageAction", action);
         }
         
         if (minScore != null) {
-            taskJson.put("minScore", minScore);
+            taskObj.put("minScore", minScore);
         }
         
-        // Add any extra parameters
+        // Add any extra parameters to task object
         if (extraParams != null) {
             for (Map.Entry<String, String> entry : extraParams.entrySet()) {
-                taskJson.put(entry.getKey(), entry.getValue());
+                taskObj.put(entry.getKey(), entry.getValue());
             }
         }
         
-        Map<String, Object> params = new HashMap<>();
-        params.put("type", taskJson.getString("type"));
-        params.put("websiteURL", taskJson.getString("websiteURL"));
-        params.put("websiteKey", taskJson.getString("websiteKey"));
-        
-        if (taskJson.has("pageAction")) {
-            params.put("pageAction", taskJson.getString("pageAction"));
-        }
-        
-        if (taskJson.has("minScore")) {
-            params.put("minScore", taskJson.getDouble("minScore"));
-        }
-        
-        // Add other parameters
-        for (String key : taskJson.keySet()) {
-            if (!key.equals("type") && !key.equals("websiteURL") && !key.equals("websiteKey") && 
-                !key.equals("pageAction") && !key.equals("minScore")) {
-                params.put(key, taskJson.get(key));
-            }
+        // Convert JSONObject to Map
+        for (String key : taskObj.keySet()) {
+            params.put(key, taskObj.get(key));
         }
         
         return solveCaptchaInternal(params);

@@ -11,6 +11,11 @@ public class CaptchaRequest {
     private final String url;
     private final Map<String, String> additionalParams;
     private final CaptchaType captchaType;
+    
+    /**
+     * Additional parameter keys
+     */
+    public static final String PARAM_TIMEOUT_SECONDS = "timeout_seconds";
 
     /**
      * Constructor for CAPTCHA request

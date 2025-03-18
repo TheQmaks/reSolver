@@ -65,7 +65,7 @@ public class ResolverExtension implements BurpExtension {
         logger.info("ResolverExtension", "Initializing components");
 
         // Initialize settings manager
-        settingsManager = new SettingsManager(api);
+        settingsManager = new SettingsManager();
         logger.info("ResolverExtension", "Settings manager initialized");
 
         // Initialize thread management components

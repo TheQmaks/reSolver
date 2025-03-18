@@ -7,8 +7,8 @@ import java.util.regex.Pattern;
 import burp.api.montoya.http.message.HttpHeader;
 import burp.api.montoya.http.message.requests.HttpRequest;
 
-import cli.li.resolver.captcha.model.CaptchaType;
 import cli.li.resolver.captcha.model.CaptchaRequest;
+import cli.li.resolver.captcha.model.CaptchaType;
 import cli.li.resolver.logger.LoggerService;
 
 /**
@@ -115,7 +115,7 @@ public class PlaceholderParser {
         } catch (IllegalArgumentException e) {
             // Unknown CAPTCHA type, use default
             logger.warning("PlaceholderParser", "Unknown CAPTCHA type: " + captchaTypeStr +
-                    ", falling back to RECAPTCHA_V2");
+                    ", falling back to RECAPTCHA_V2. " + e.getMessage());
             captchaType = CaptchaType.RECAPTCHA_V2;
         }
 
@@ -124,12 +124,16 @@ public class PlaceholderParser {
         if (optionalParams != null && !optionalParams.isEmpty()) {
             String[] params = optionalParams.split(",");
             for (String param : params) {
-                String[] keyValue = param.split("=", 2);
-                if (keyValue.length == 2) {
+                param = param.trim();
+                if (param.contains("=")) {
+                    // Handle key-value parameters (e.g., timeout_seconds=60)
+                    String[] keyValue = param.split("=", 2);
                     additionalParams.put(keyValue[0].trim(), keyValue[1].trim());
                     logger.debug("PlaceholderParser", "Added parameter: " + keyValue[0].trim() + "=" + keyValue[1].trim());
                 } else {
-                    logger.warning("PlaceholderParser", "Invalid parameter format in placeholder: " + param);
+                    // Handle flag parameters without values (e.g., invisible, enterprise)
+                    additionalParams.put(param, "true");
+                    logger.debug("PlaceholderParser", "Added flag parameter: " + param);
                 }
             }
         }

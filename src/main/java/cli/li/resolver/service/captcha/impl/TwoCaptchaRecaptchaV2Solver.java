@@ -23,16 +23,25 @@ public class TwoCaptchaRecaptchaV2Solver implements ICaptchaSolver {
     public String solve(CaptchaRequest request) throws CaptchaSolverException {
         Map<String, String> extraParams = new HashMap<>();
         
-        // Add additional parameters if present
+        // Handle additional parameters
         Map<String, String> additionalParams = request.additionalParams();
         if (additionalParams.containsKey("invisible")) {
-            extraParams.put("invisible", additionalParams.get("invisible"));
+            extraParams.put("invisible", "1");
         }
-
-        if (additionalParams.containsKey("proxy")) {
-            extraParams.put("proxy", additionalParams.get("proxy"));
+        
+        if (additionalParams.containsKey("enterprise")) {
+            extraParams.put("enterprise", "1");
         }
-
+        
+        // Copy any other parameters
+        if (additionalParams != null) {
+            for (Map.Entry<String, String> entry : additionalParams.entrySet()) {
+                if (!entry.getKey().equals("invisible") && !entry.getKey().equals("enterprise")) {
+                    extraParams.put(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+        
         return service.solveRecaptchaV2(request.siteKey(), request.url(), extraParams);
     }
 

@@ -6,6 +6,7 @@ import cli.li.resolver.captcha.solver.ICaptchaSolver;
 import cli.li.resolver.captcha.model.ServiceConfig;
 import cli.li.resolver.logger.LoggerService;
 import cli.li.resolver.settings.SettingsManager;
+import cli.li.resolver.util.ApiKeyUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -45,11 +46,7 @@ public class ServiceManager {
                 service.setPriority(config.getPriority());
 
                 // Mask API key for logging
-                String maskedApiKey = config.getApiKey().isEmpty() ? "(empty)" :
-                        config.getApiKey().length() > 8 ?
-                                config.getApiKey().substring(0, 4) + "..." +
-                                        config.getApiKey().substring(config.getApiKey().length() - 4) :
-                                "****";
+                String maskedApiKey = ApiKeyUtils.maskApiKey(config.getApiKey());
 
                 logger.info("ServiceManager", "Configured service: " + service.getName() +
                         " (ID: " + service.getId() + "), " +
@@ -80,11 +77,7 @@ public class ServiceManager {
             configs.put(service.getId(), config);
 
             // Mask API key for logging
-            String maskedApiKey = service.getApiKey().isEmpty() ? "(empty)" :
-                    service.getApiKey().length() > 8 ?
-                            service.getApiKey().substring(0, 4) + "..." +
-                                    service.getApiKey().substring(service.getApiKey().length() - 4) :
-                            "****";
+            String maskedApiKey = ApiKeyUtils.maskApiKey(service.getApiKey());
 
             logger.info("ServiceManager", "Saving configuration for service: " + service.getName() +
                     " (ID: " + service.getId() + "), " +
@@ -110,6 +103,19 @@ public class ServiceManager {
         logger.debug("ServiceManager", "Retrieved " + services.size() + " enabled services in priority order");
         return services;
     }
+    
+    /**
+     * Get all available services sorted by priority, including disabled ones
+     * @return List of all services sorted by priority
+     */
+    public List<ICaptchaService> getAllServicesInPriorityOrder() {
+        List<ICaptchaService> services = serviceRegistry.getAllServices().stream()
+                .sorted(Comparator.comparingInt(ICaptchaService::getPriority))
+                .collect(Collectors.toList());
+
+        logger.debug("ServiceManager", "Retrieved " + services.size() + " services (enabled and disabled) in priority order");
+        return services;
+    }
 
     /**
      * Get a CAPTCHA solver for the specified type
@@ -121,6 +127,12 @@ public class ServiceManager {
         logger.info("ServiceManager", "Looking for solver for CAPTCHA type: " + captchaType);
 
         for (ICaptchaService service : getServicesInPriorityOrder()) {
+            // Skip services with invalid API keys
+            if (!service.validateApiKey()) {
+                logger.warning("ServiceManager", "Skipping service " + service.getName() + " due to invalid API key");
+                continue;
+            }
+            
             ICaptchaSolver solver = service.getSolver(captchaType);
             if (solver != null) {
                 logger.info("ServiceManager", "Found solver for " + captchaType +
@@ -158,17 +170,29 @@ public class ServiceManager {
 
         for (ICaptchaService service : serviceRegistry.getAllServices()) {
             if (service.isEnabled()) {
-                try {
-                    logger.info("ServiceManager", "Checking balance for service: " + service.getName());
-                    service.getBalance(); // This will update the balance internally
-                    logger.info("ServiceManager", "Balance for " + service.getName() + ": " + service.getBalance());
-                } catch (Exception e) {
-                    logger.error("ServiceManager", "Error checking balance for " + service.getName() + ": " + e.getMessage(), e);
-                    // Ignore exceptions during balance check
-                }
+                updateBalance(service);
             }
         }
 
         logger.info("ServiceManager", "All balances updated");
+    }
+    
+    /**
+     * Update the balance for a specific service
+     * @param service The service to update the balance for
+     */
+    public void updateBalance(ICaptchaService service) {
+        if (service != null && service.isEnabled() && service.validateApiKey()) {
+            try {
+                logger.info("ServiceManager", "Checking balance for service: " + service.getName());
+                service.getBalance(); // This will update the balance internally
+                logger.info("ServiceManager", "Balance for " + service.getName() + ": " + service.getBalance());
+            } catch (Exception e) {
+                logger.error("ServiceManager", "Error checking balance for " + service.getName() + ": " + e.getMessage(), e);
+                // Ignore exceptions during balance check
+            }
+        } else if (service != null) {
+            logger.warning("ServiceManager", "Cannot update balance for " + service.getName() + ": Service is disabled or has invalid API key");
+        }
     }
 }

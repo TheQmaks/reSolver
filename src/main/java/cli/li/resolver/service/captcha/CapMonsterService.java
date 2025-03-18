@@ -3,6 +3,7 @@ package cli.li.resolver.service.captcha;
 import java.util.Map;
 import java.util.HashMap;
 import java.math.BigDecimal;
+import java.time.Duration;
 
 import org.json.JSONObject;
 
@@ -22,7 +23,7 @@ public class CapMonsterService extends AbstractCaptchaService {
     private static final String CREATE_TASK_URL = API_BASE_URL + "createTask";
     private static final String GET_TASK_RESULT_URL = API_BASE_URL + "getTaskResult";
     private static final String GET_BALANCE_URL = API_BASE_URL + "getBalance";
-
+    
     public CapMonsterService() {
         super();
         priority = 2; // Default priority for CapMonster
@@ -69,15 +70,15 @@ public class CapMonsterService extends AbstractCaptchaService {
     protected String sendBalanceRequest() throws Exception {
         BaseHttpClient httpClient = new HttpClientImpl();
 
-        // Parameters for balance check
-        Map<String, String> params = new HashMap<>();
-        params.put("key", apiKey);
-        params.put("action", "getbalance");
-
+        // Create proper JSON request according to documentation
+        JSONObject requestJson = new JSONObject();
+        requestJson.put("clientKey", apiKey);
+        
         logger.debug(getClass().getSimpleName(), "Sending balance check request to CapMonster API");
-        String response = httpClient.post(GET_BALANCE_URL, params);
+        // Use reasonable timeout for balance check to prevent hanging threads
+        String response = httpClient.postJson(GET_BALANCE_URL, requestJson.toString(), Duration.ofSeconds(5));
         logger.debug(getClass().getSimpleName(), "Received balance response from CapMonster API");
-
+        
         return response;
     }
 
@@ -109,10 +110,6 @@ public class CapMonsterService extends AbstractCaptchaService {
         try {
             BaseHttpClient httpClient = new HttpClientImpl();
 
-            // Add API key to parameters
-            taskParams.put("key", apiKey);
-            taskParams.put("json", "1"); // Get response in JSON format
-
             // Create task creation request
             JSONObject taskJson = new JSONObject();
             for (Map.Entry<String, Object> entry : taskParams.entrySet()) {
@@ -123,18 +120,15 @@ public class CapMonsterService extends AbstractCaptchaService {
             requestJson.put("clientKey", apiKey);
             requestJson.put("task", taskJson);
 
-            // Send task creation request
-            Map<String, String> params = new HashMap<>();
-            params.put("json", requestJson.toString());
-
             logger.info(getClass().getSimpleName(), "Sending CAPTCHA to CapMonster API");
             logger.debug(getClass().getSimpleName(), "Task type: " + taskJson.getString("type"));
 
-            String createTaskResponse = httpClient.post(getCreateTaskUrl(), params);
+            // Send task creation request using postJson
+            String createTaskResponse = httpClient.postJson(getCreateTaskUrl(), requestJson.toString());
             JSONObject createTaskJson = new JSONObject(createTaskResponse);
 
             if (createTaskJson.getInt("errorId") != 0) {
-                String errorMessage = createTaskJson.getString("errorDescription");
+                String errorMessage = createTaskJson.optString("errorDescription", "Unknown error");
                 logger.error(getClass().getSimpleName(), "Error creating task: " + errorMessage);
                 throw new CaptchaSolverException("Error creating task: " + errorMessage);
             }
@@ -147,9 +141,6 @@ public class CapMonsterService extends AbstractCaptchaService {
             getResultJson.put("clientKey", apiKey);
             getResultJson.put("taskId", taskId);
 
-            params.clear();
-            params.put("json", getResultJson.toString());
-
             // Wait for the solution
             int attempts = 0;
             while (attempts < MAX_POLLS) {
@@ -159,11 +150,12 @@ public class CapMonsterService extends AbstractCaptchaService {
                 logger.debug(getClass().getSimpleName(),
                         "Polling for result, attempt " + attempts + " of " + MAX_POLLS);
 
-                String resultResponse = httpClient.post(getTaskResultUrl(), params);
+                // Send the get result request using postJson
+                String resultResponse = httpClient.postJson(getTaskResultUrl(), getResultJson.toString());
                 JSONObject resultJson = new JSONObject(resultResponse);
 
                 if (resultJson.getInt("errorId") != 0) {
-                    String errorMessage = resultJson.getString("errorDescription");
+                    String errorMessage = resultJson.optString("errorDescription", "Unknown error");
                     logger.error(getClass().getSimpleName(), "Error getting result: " + errorMessage);
                     throw new CaptchaSolverException("Error getting result: " + errorMessage);
                 }
@@ -171,7 +163,7 @@ public class CapMonsterService extends AbstractCaptchaService {
                 String status = resultJson.getString("status");
                 if ("ready".equals(status)) {
                     // CAPTCHA successfully solved
-                    String token = resultJson.getJSONObject("solution").getString("token");
+                    String token = resultJson.getJSONObject("solution").getString("gRecaptchaResponse");
 
                     // Truncate token for logging
                     String truncatedToken = token.length() > 20 ?

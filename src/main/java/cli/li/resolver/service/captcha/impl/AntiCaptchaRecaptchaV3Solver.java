@@ -21,28 +21,35 @@ public class AntiCaptchaRecaptchaV3Solver implements ICaptchaSolver {
 
     @Override
     public String solve(CaptchaRequest request) throws CaptchaSolverException {
-        // For reCAPTCHA v3, the "action" parameter is required
+        Map<String, String> extraParams = new HashMap<>();
+        
+        // Handle additional parameters
         Map<String, String> additionalParams = request.additionalParams();
         
-        // Default action value if not provided
-        String action = additionalParams.getOrDefault("action", "verify");
+        // For v3, get action and min_score if provided
+        String action = additionalParams != null && additionalParams.containsKey("action") ? 
+                additionalParams.get("action") : "verify";
         
-        // Minimum score (0.3 by default for Anti-Captcha)
         Double minScore = null;
-        if (additionalParams.containsKey("min_score")) {
+        if (additionalParams != null && additionalParams.containsKey("min_score")) {
             try {
                 minScore = Double.parseDouble(additionalParams.get("min_score"));
             } catch (NumberFormatException e) {
-                // Ignore invalid score
+                // Use default value if parsing fails
             }
         }
         
-        // Create a map for extra parameters
-        Map<String, String> extraParams = new HashMap<>();
-        for (Map.Entry<String, String> entry : additionalParams.entrySet()) {
-            String key = entry.getKey();
-            if (!"action".equals(key) && !"min_score".equals(key)) {
-                extraParams.put(key, entry.getValue());
+        if (additionalParams != null && additionalParams.containsKey("enterprise")) {
+            extraParams.put("isEnterprise", "true");
+        }
+        
+        // Copy any other parameters
+        if (additionalParams != null) {
+            for (Map.Entry<String, String> entry : additionalParams.entrySet()) {
+                if (!entry.getKey().equals("action") && !entry.getKey().equals("min_score") && 
+                        !entry.getKey().equals("enterprise")) {
+                    extraParams.put(entry.getKey(), entry.getValue());
+                }
             }
         }
         
