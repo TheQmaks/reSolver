@@ -1,10 +1,10 @@
 package cli.li.resolver.ui.renderer;
 
-import javax.swing.*;
-import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
+import javax.swing.*;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import javax.swing.table.DefaultTableCellRenderer;
 
 /**
  * Renderer for balance cells

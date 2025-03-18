@@ -1,13 +1,13 @@
 package cli.li.resolver.service.captcha.impl;
 
-import cli.li.resolver.service.captcha.TwoCaptchaService;
-import cli.li.resolver.captcha.model.CaptchaRequest;
-import cli.li.resolver.captcha.exception.CaptchaSolverException;
-import cli.li.resolver.captcha.model.CaptchaType;
-import cli.li.resolver.captcha.solver.ICaptchaSolver;
-
-import java.util.HashMap;
 import java.util.Map;
+import java.util.HashMap;
+
+import cli.li.resolver.captcha.model.CaptchaType;
+import cli.li.resolver.captcha.model.CaptchaRequest;
+import cli.li.resolver.captcha.solver.ICaptchaSolver;
+import cli.li.resolver.service.captcha.TwoCaptchaService;
+import cli.li.resolver.captcha.exception.CaptchaSolverException;
 
 /**
  * reCAPTCHA v2 solver implementation for 2Captcha service

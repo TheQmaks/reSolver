@@ -2,13 +2,13 @@ package cli.li.resolver.stats;
 
 import java.util.Map;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import cli.li.resolver.service.ServiceManager;
 import cli.li.resolver.captcha.model.CaptchaType;
 import cli.li.resolver.captcha.solver.ICaptchaSolver;
-import cli.li.resolver.service.ServiceManager;
 import cli.li.resolver.service.captcha.ICaptchaService;
 
 /**

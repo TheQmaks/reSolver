@@ -1,12 +1,12 @@
 package cli.li.resolver.ui.model;
 
+import java.util.List;
+import java.util.ArrayList;
+import java.math.BigDecimal;
+import javax.swing.table.AbstractTableModel;
+
 import cli.li.resolver.service.ServiceManager;
 import cli.li.resolver.service.captcha.ICaptchaService;
-
-import javax.swing.table.AbstractTableModel;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Table model for CAPTCHA services

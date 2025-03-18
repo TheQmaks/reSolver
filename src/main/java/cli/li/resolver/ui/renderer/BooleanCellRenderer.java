@@ -1,8 +1,8 @@
 package cli.li.resolver.ui.renderer;
 
+import java.awt.*;
 import javax.swing.*;
 import javax.swing.table.TableCellRenderer;
-import java.awt.*;
 
 /**
  * Renderer for boolean cells

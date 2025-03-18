@@ -1,16 +1,16 @@
 package cli.li.resolver.http;
 
-import java.io.IOException;
 import java.net.URI;
+import java.util.Map;
+import java.time.Duration;
+import java.io.IOException;
 import java.net.URLEncoder;
+import org.json.JSONObject;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.Map;
 import java.util.stream.Collectors;
-import org.json.JSONObject;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Modern HTTP client implementation using Java 11 HttpClient API

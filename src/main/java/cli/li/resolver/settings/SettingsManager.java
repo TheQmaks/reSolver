@@ -1,18 +1,18 @@
 package cli.li.resolver.settings;
 
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.HashMap;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.io.IOException;
 
-import cli.li.resolver.logger.LoggerService;
 import org.json.JSONObject;
 import org.json.JSONException;
 
+import cli.li.resolver.logger.LoggerService;
 import cli.li.resolver.captcha.model.ServiceConfig;
 
 /**

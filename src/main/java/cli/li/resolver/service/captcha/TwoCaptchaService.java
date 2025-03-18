@@ -2,15 +2,15 @@ package cli.li.resolver.service.captcha;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.time.Duration;
 import java.math.BigDecimal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.time.Duration;
 
+import cli.li.resolver.http.HttpClientImpl;
+import cli.li.resolver.http.BaseHttpClient;
 import cli.li.resolver.captcha.model.CaptchaType;
 import cli.li.resolver.captcha.exception.CaptchaSolverException;
-import cli.li.resolver.http.BaseHttpClient;
-import cli.li.resolver.http.HttpClientImpl;
 import cli.li.resolver.service.captcha.impl.TwoCaptchaRecaptchaV2Solver;
 import cli.li.resolver.service.captcha.impl.TwoCaptchaRecaptchaV3Solver;
 

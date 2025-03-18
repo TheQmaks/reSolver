@@ -1,17 +1,16 @@
 package cli.li.resolver.service.captcha;
 
 import java.util.Map;
-import java.math.BigDecimal;
-import java.util.concurrent.ConcurrentHashMap;
 import java.time.Instant;
 import java.time.Duration;
+import java.math.BigDecimal;
+import java.util.concurrent.ConcurrentHashMap;
 
-import cli.li.resolver.captcha.model.CaptchaServiceStatistics;
-import cli.li.resolver.captcha.exception.CaptchaSolverException;
+import cli.li.resolver.logger.LoggerService;
 import cli.li.resolver.captcha.model.CaptchaType;
 import cli.li.resolver.captcha.solver.ICaptchaSolver;
-import cli.li.resolver.service.captcha.ICaptchaService;
-import cli.li.resolver.logger.LoggerService;
+import cli.li.resolver.captcha.model.CaptchaServiceStatistics;
+import cli.li.resolver.captcha.exception.CaptchaSolverException;
 
 /**
  * Abstract base class for CAPTCHA service implementations.

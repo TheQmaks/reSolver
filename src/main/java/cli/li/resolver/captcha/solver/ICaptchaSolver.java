@@ -1,8 +1,8 @@
 package cli.li.resolver.captcha.solver;
 
+import cli.li.resolver.captcha.model.CaptchaType;
 import cli.li.resolver.captcha.model.CaptchaRequest;
 import cli.li.resolver.captcha.exception.CaptchaSolverException;
-import cli.li.resolver.captcha.model.CaptchaType;
 
 /**
  * Interface for CAPTCHA solvers

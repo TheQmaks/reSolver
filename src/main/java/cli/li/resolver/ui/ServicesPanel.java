@@ -2,15 +2,15 @@ package cli.li.resolver.ui;
 
 import java.awt.*;
 import javax.swing.*;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.DefaultTableCellRenderer;
 
 import cli.li.resolver.service.ServiceManager;
-import cli.li.resolver.service.captcha.ICaptchaService;
 import cli.li.resolver.ui.model.ServiceTableModel;
 import cli.li.resolver.ui.renderer.ApiKeyCellRenderer;
 import cli.li.resolver.ui.renderer.BalanceCellRenderer;
 import cli.li.resolver.ui.renderer.BooleanCellRenderer;
+import cli.li.resolver.service.captcha.ICaptchaService;
 
 /**
  * Panel for CAPTCHA service management

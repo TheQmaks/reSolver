@@ -1,10 +1,10 @@
 package cli.li.resolver.ui.renderer;
 
-import cli.li.resolver.util.ApiKeyUtils;
-
+import java.awt.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
-import java.awt.*;
+
+import cli.li.resolver.util.ApiKeyUtils;
 
 /**
  * Renderer for API key cells that masks the actual key

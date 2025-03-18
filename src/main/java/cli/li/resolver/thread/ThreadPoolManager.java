@@ -1,9 +1,9 @@
 package cli.li.resolver.thread;
 
-import cli.li.resolver.settings.SettingsManager;
-
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import cli.li.resolver.settings.SettingsManager;
 
 /**
  * Manager for thread pool used to solve CAPTCHAs

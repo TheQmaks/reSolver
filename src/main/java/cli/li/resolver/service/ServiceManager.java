@@ -1,15 +1,15 @@
 package cli.li.resolver.service;
 
-import cli.li.resolver.captcha.model.CaptchaType;
-import cli.li.resolver.service.captcha.ICaptchaService;
-import cli.li.resolver.captcha.solver.ICaptchaSolver;
-import cli.li.resolver.captcha.model.ServiceConfig;
-import cli.li.resolver.logger.LoggerService;
-import cli.li.resolver.settings.SettingsManager;
-import cli.li.resolver.util.ApiKeyUtils;
-
 import java.util.*;
 import java.util.stream.Collectors;
+
+import cli.li.resolver.util.ApiKeyUtils;
+import cli.li.resolver.logger.LoggerService;
+import cli.li.resolver.settings.SettingsManager;
+import cli.li.resolver.captcha.model.CaptchaType;
+import cli.li.resolver.captcha.model.ServiceConfig;
+import cli.li.resolver.captcha.solver.ICaptchaSolver;
+import cli.li.resolver.service.captcha.ICaptchaService;
 
 /**
  * Manager for CAPTCHA solving services

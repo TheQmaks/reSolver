@@ -3,18 +3,18 @@ package cli.li.resolver;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.BurpExtension;
 
-import cli.li.resolver.logger.LoggerService;
 import cli.li.resolver.thread.*;
 import cli.li.resolver.service.*;
-import cli.li.resolver.service.captcha.TwoCaptchaService;
-import cli.li.resolver.service.captcha.AntiCaptchaService;
-import cli.li.resolver.service.captcha.CapMonsterService;
 import cli.li.resolver.ui.UIManager;
+import cli.li.resolver.logger.LoggerService;
 import cli.li.resolver.http.PlaceholderParser;
 import cli.li.resolver.http.HttpRequestModifier;
 import cli.li.resolver.settings.SettingsManager;
 import cli.li.resolver.stats.RequestStatsTracker;
 import cli.li.resolver.stats.StatisticsCollector;
+import cli.li.resolver.service.captcha.CapMonsterService;
+import cli.li.resolver.service.captcha.TwoCaptchaService;
+import cli.li.resolver.service.captcha.AntiCaptchaService;
 
 /**
  * ResolverExtension is the main entry point for the reSolver Burp Suite extension.

@@ -1,9 +1,9 @@
 package cli.li.resolver.service.captcha;
 
 import java.math.BigDecimal;
-import cli.li.resolver.captcha.model.CaptchaServiceStatistics;
 import cli.li.resolver.captcha.model.CaptchaType;
 import cli.li.resolver.captcha.solver.ICaptchaSolver;
+import cli.li.resolver.captcha.model.CaptchaServiceStatistics;
 
 /**
  * Interface for CAPTCHA solving services

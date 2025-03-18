@@ -1,7 +1,7 @@
 package cli.li.resolver.captcha.model;
 
-import java.util.Collections;
 import java.util.Map;
+import java.util.Collections;
 
 /**
  * Represents a CAPTCHA solving request

@@ -7,9 +7,9 @@ import java.util.regex.Pattern;
 import burp.api.montoya.http.message.HttpHeader;
 import burp.api.montoya.http.message.requests.HttpRequest;
 
-import cli.li.resolver.captcha.model.CaptchaRequest;
-import cli.li.resolver.captcha.model.CaptchaType;
 import cli.li.resolver.logger.LoggerService;
+import cli.li.resolver.captcha.model.CaptchaType;
+import cli.li.resolver.captcha.model.CaptchaRequest;
 
 /**
  * Parser for CAPTCHA placeholders in HTTP requests
