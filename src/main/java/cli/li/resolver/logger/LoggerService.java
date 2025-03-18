@@ -1,11 +1,11 @@
 package cli.li.resolver.logger;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.function.Consumer;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Service for logging extension events

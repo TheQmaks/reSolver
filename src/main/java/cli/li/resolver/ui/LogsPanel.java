@@ -1,10 +1,10 @@
 package cli.li.resolver.ui;
 
 import java.awt.*;
-import java.time.format.DateTimeFormatter;
-import java.util.function.Consumer;
 import javax.swing.*;
 import javax.swing.text.*;
+import java.util.function.Consumer;
+import java.time.format.DateTimeFormatter;
 
 import cli.li.resolver.logger.LoggerService;
 import cli.li.resolver.logger.LoggerService.LogEntry;

@@ -1,4 +1,4 @@
-package cli.li.resolver.captcha;
+package cli.li.resolver.captcha.model;
 
 /**
  * Configuration for a CAPTCHA service
