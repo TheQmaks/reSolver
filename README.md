@@ -60,7 +60,7 @@ An essential tool for penetration testers and security professionals, allowing y
 ## 🚦 Getting Started
 
 ### Requirements
-- Burp Suite Professional (latest version recommended)
+- Burp Suite (latest version recommended)
 - Java 11+
 - Account with one of the supported CAPTCHA solving services
 
@@ -276,7 +276,7 @@ These examples demonstrate how to use reSolver with the 2Captcha demo site. You 
 
 ## 🔄 Compatibility
 
-- **Burp Suite Professional**: 2021.x and newer
+- **Burp Suite**: 2024.x and newer
 - **Java**: 11 and newer
 - **Operating Systems**: Windows, macOS, Linux
 
