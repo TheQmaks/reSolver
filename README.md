@@ -1,12 +1,19 @@
-# reSolver
+# reSolver - CAPTCHA solver for BurpSuite
+
+![reSolver Logo](https://github.com/TheQmaks/reSolver/blob/main/resources/logo.jpg?raw=true)
 
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
 [![Java](https://img.shields.io/badge/Java-11%2B-orange)](https://www.oracle.com/java/)
 [![Burp Suite Extension](https://img.shields.io/badge/Burp%20Suite-Extension-purple)](https://portswigger.net/bappstore)
 
-![reSolver Preview](https://github.com/TheQmaks/reSolver/blob/main/resources/preview.gif?raw=true)
 
-A Burp Suite extension that integrates popular CAPTCHA solving services to handle various CAPTCHA types without manual intervention.  An essential tool for penetration testers and security professionals, allowing you to bypass CAPTCHA protection during web application testing.
+An essential tool for penetration testers and security professionals, allowing you to bypass CAPTCHA protection during web application testing.
+
+<details>
+  <summary><b>Extension UI preview</b></summary>
+  
+  ![reSolver Preview](https://github.com/TheQmaks/reSolver/blob/main/resources/preview.gif?raw=true)
+</details>
 
 ## 📋 Table of Contents
 
@@ -146,81 +153,105 @@ These examples demonstrate how to use reSolver with the 2Captcha demo site. You 
 
 ### reCAPTCHA v2 Standard
 
-```http
-POST /api/v1/captcha-demo/recaptcha/verify HTTP/2
-Host: 2captcha.com
-Content-Type: application/json
-
-{
-  "siteKey": "6LfD3PIbAAAAAJs_eEHvoOl75_83eXSqpPSRFJ_u",
-  "answer": "{{CAPTCHA[:]recaptchav2[:]6LfD3PIbAAAAAJs_eEHvoOl75_83eXSqpPSRFJ_u[:]https://2captcha.com/demo/recaptcha-v2}}"
-}
-```
+<details>
+  <summary><b>View</b></summary>
+  
+  ```http
+  POST /api/v1/captcha-demo/recaptcha/verify HTTP/2
+  Host: 2captcha.com
+  Content-Type: application/json
+  
+  {
+    "siteKey": "6LfD3PIbAAAAAJs_eEHvoOl75_83eXSqpPSRFJ_u",
+    "answer": "{{CAPTCHA[:]recaptchav2[:]6LfD3PIbAAAAAJs_eEHvoOl75_83eXSqpPSRFJ_u[:]https://2captcha.com/demo/recaptcha-v2}}"
+  }
+  ```
+</details>
 
 ### reCAPTCHA v2 Invisible
 
-```http
-POST /api/v1/captcha-demo/recaptcha/verify HTTP/2
-Host: 2captcha.com
-Content-Type: application/json
-
-{
-  "siteKey": "6LdO5_IbAAAAAAeVBL9TClS19NUTt5wswEb3Q7C5",
-  "answer": "{{CAPTCHA[:]recaptchav2[:]6LdO5_IbAAAAAAeVBL9TClS19NUTt5wswEb3Q7C5[:]https://2captcha.com/demo/recaptcha-v2-invisible[:]invisible}}"
-}
-```
+<details>
+  <summary><b>View</b></summary>
+  
+  ```http
+  POST /api/v1/captcha-demo/recaptcha/verify HTTP/2
+  Host: 2captcha.com
+  Content-Type: application/json
+  
+  {
+    "siteKey": "6LdO5_IbAAAAAAeVBL9TClS19NUTt5wswEb3Q7C5",
+    "answer": "{{CAPTCHA[:]recaptchav2[:]6LdO5_IbAAAAAAeVBL9TClS19NUTt5wswEb3Q7C5[:]https://2captcha.com/demo/recaptcha-v2-invisible[:]invisible}}"
+  }
+  ```
+</details>
 
 ### reCAPTCHA v2 Callback
 
-```http
-POST /api/v1/captcha-demo/recaptcha/verify HTTP/2
-Host: 2captcha.com
-Content-Type: application/json
-
-{
-  "siteKey": "6LfD3PIbAAAAAJs_eEHvoOl75_83eXSqpPSRFJ_u",
-  "answer": "{{CAPTCHA[:]recaptchav2[:]6LfD3PIbAAAAAJs_eEHvoOl75_83eXSqpPSRFJ_u[:]https://2captcha.com/demo/recaptcha-v2-callback}}"
-}
-```
+<details>
+  <summary><b>View</b></summary>
+  
+  ```http
+  POST /api/v1/captcha-demo/recaptcha/verify HTTP/2
+  Host: 2captcha.com
+  Content-Type: application/json
+  
+  {
+    "siteKey": "6LfD3PIbAAAAAJs_eEHvoOl75_83eXSqpPSRFJ_u",
+    "answer": "{{CAPTCHA[:]recaptchav2[:]6LfD3PIbAAAAAJs_eEHvoOl75_83eXSqpPSRFJ_u[:]https://2captcha.com/demo/recaptcha-v2-callback}}"
+  }
+  ```
+</details>
 
 ### reCAPTCHA v2 Enterprise
 
-```http
-POST /api/v1/captcha-demo/recaptcha-enterprise/verify HTTP/2
-Host: 2captcha.com
-Content-Type: application/json
-
-{
-  "siteKey": "6Lf26sUnAAAAAIKLuWNYgRsFUfmI-3Lex3xT5N-s",
-  "token": "{{CAPTCHA[:]recaptchav2[:]6Lf26sUnAAAAAIKLuWNYgRsFUfmI-3Lex3xT5N-s[:]https://2captcha.com/demo/recaptcha-v2-enterprise[:]enterprise}}"
-}
-```
+<details>
+  <summary><b>View</b></summary>
+  
+  ```http
+  POST /api/v1/captcha-demo/recaptcha-enterprise/verify HTTP/2
+  Host: 2captcha.com
+  Content-Type: application/json
+  
+  {
+    "siteKey": "6Lf26sUnAAAAAIKLuWNYgRsFUfmI-3Lex3xT5N-s",
+    "token": "{{CAPTCHA[:]recaptchav2[:]6Lf26sUnAAAAAIKLuWNYgRsFUfmI-3Lex3xT5N-s[:]https://2captcha.com/demo/recaptcha-v2-enterprise[:]enterprise}}"
+  }
+  ```
+</details>
 
 ### reCAPTCHA v3
 
-```http
-POST /api/v1/captcha-demo/recaptcha/verify HTTP/2
-Host: 2captcha.com
-Content-Type: application/json
-
-{
-  "siteKey": "6Lcyqq8oAAAAAJE7eVJ3aZp_hnJcI6LgGdYD8lge",
-  "answer": "{{CAPTCHA[:]recaptchav3[:]6Lcyqq8oAAAAAJE7eVJ3aZp_hnJcI6LgGdYD8lge[:]https://2captcha.com/demo/recaptcha-v3[:]min_score=0.7}}"
-}
-```
+<details>
+  <summary><b>View</b></summary>
+  
+  ```http
+  POST /api/v1/captcha-demo/recaptcha/verify HTTP/2
+  Host: 2captcha.com
+  Content-Type: application/json
+  
+  {
+    "siteKey": "6Lcyqq8oAAAAAJE7eVJ3aZp_hnJcI6LgGdYD8lge",
+    "answer": "{{CAPTCHA[:]recaptchav3[:]6Lcyqq8oAAAAAJE7eVJ3aZp_hnJcI6LgGdYD8lge[:]https://2captcha.com/demo/recaptcha-v3[:]min_score=0.7}}"
+  }
+  ```
+</details>
 
 ### reCAPTCHA v3 Enterprise
 
-```http
-POST /api/v1/captcha-demo/recaptcha-enterprise/verify HTTP/2
-Host: 2captcha.com
-Content-Type: application/json
-
-{
-  "siteKey": "6Lel38UnAAAAAMRwKj9qLH2Ws4Tf2uTDQCyfgR6b",
-  "token": "{{CAPTCHA[:]recaptchav3[:]6Lel38UnAAAAAMRwKj9qLH2Ws4Tf2uTDQCyfgR6b[:]https://2captcha.com/demo/recaptcha-v3-enterprise[:]enterprise,min_score=0.9}}"
-}
-```
+<details>
+  <summary><b>View</b></summary>
+  
+  ```http
+  POST /api/v1/captcha-demo/recaptcha-enterprise/verify HTTP/2
+  Host: 2captcha.com
+  Content-Type: application/json
+  
+  {
+    "siteKey": "6Lel38UnAAAAAMRwKj9qLH2Ws4Tf2uTDQCyfgR6b",
+    "token": "{{CAPTCHA[:]recaptchav3[:]6Lel38UnAAAAAMRwKj9qLH2Ws4Tf2uTDQCyfgR6b[:]https://2captcha.com/demo/recaptcha-v3-enterprise[:]enterprise,min_score=0.9}}"
+  }
+  ```
+</details>
 
 ## 📦 Building from Source
 
