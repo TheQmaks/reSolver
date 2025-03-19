@@ -18,6 +18,7 @@ An essential tool for penetration testers and security professionals, allowing y
 ## 📋 Table of Contents
 
 - [Features](#-features)
+- [Demonstration Video](#-demonstration-video)
 - [Getting Started](#-getting-started)
   - [Requirements](#requirements)
   - [Installation](#installation)
@@ -56,6 +57,14 @@ An essential tool for penetration testers and security professionals, allowing y
   - Statistics tracking
   - High load detection
   - Custom timeout configuration
+
+## 🎥 Demonstration Video
+
+[![reSolver Demo Video](https://img.youtube.com/vi/9hI14Thj1aY/0.jpg)](https://www.youtube.com/watch?v=9hI14Thj1aY)
+
+This video was created to demonstrate the real-world application of the reSolver plugin for BurpSuite.
+In this video, we show an example of using it together with BurpSuite's built-in tool - Intruder.
+The video demonstrates that in just 1 minute, we successfully send 100 requests to the server across 10 threads and successfully bypass reCAPTCHA v2 verification.
 
 ## 🚦 Getting Started
 
