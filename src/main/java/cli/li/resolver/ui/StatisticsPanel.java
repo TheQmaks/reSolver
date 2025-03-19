@@ -1,14 +1,18 @@
 package cli.li.resolver.ui;
 
-import java.awt.*;
 import javax.swing.*;
-import java.util.Map;
+import javax.swing.table.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.ArrayList;
-import javax.swing.table.AbstractTableModel;
 
 import cli.li.resolver.captcha.model.CaptchaType;
 import cli.li.resolver.stats.StatisticsCollector;
+import cli.li.resolver.ui.UIHelper;
 
 /**
  * Panel for statistics
@@ -58,7 +62,7 @@ public class StatisticsPanel extends JPanel {
         buttonPanel.add(refreshButton);
 
         resetButton.addActionListener(e -> {
-            int result = JOptionPane.showConfirmDialog(this,
+            int result = JOptionPane.showConfirmDialog(UIHelper.getBurpFrame(),
                     "Are you sure you want to reset all statistics?",
                     "Reset Statistics",
                     JOptionPane.YES_NO_OPTION);

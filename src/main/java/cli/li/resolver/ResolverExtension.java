@@ -2,10 +2,12 @@ package cli.li.resolver;
 
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.BurpExtension;
+import burp.api.montoya.extension.ExtensionUnloadingHandler;
 
 import cli.li.resolver.thread.*;
 import cli.li.resolver.service.*;
 import cli.li.resolver.ui.UIManager;
+import cli.li.resolver.ui.UIHelper;
 import cli.li.resolver.logger.LoggerService;
 import cli.li.resolver.http.PlaceholderParser;
 import cli.li.resolver.http.HttpRequestModifier;
@@ -20,7 +22,7 @@ import cli.li.resolver.service.captcha.AntiCaptchaService;
  * ResolverExtension is the main entry point for the reSolver Burp Suite extension.
  * It registers HTTP handlers, initializes services, and sets up the user interface.
  */
-public class ResolverExtension implements BurpExtension {
+public class ResolverExtension implements BurpExtension, ExtensionUnloadingHandler {
 
     public static MontoyaApi api;
     private ServiceManager serviceManager;
@@ -57,6 +59,14 @@ public class ResolverExtension implements BurpExtension {
         // Add extension tab to Burp UI
         api.userInterface().registerSuiteTab("reSolver", uiManager.getUI());
         logger.info("ResolverExtension", "UI tab registered");
+        
+        // Initialize UI helper for proper dialog parents
+        UIHelper.initialize();
+        logger.info("ResolverExtension", "UI helper initialized");
+
+        // Register unloading handler for clean resource management
+        api.extension().registerUnloadingHandler(this);
+        logger.info("ResolverExtension", "Extension unloading handler registered");
 
         logger.info("ResolverExtension", "reSolver extension has been loaded successfully");
     }
@@ -111,5 +121,28 @@ public class ResolverExtension implements BurpExtension {
         serviceRegistry.registerService(new CapMonsterService());
 
         logger.info("ResolverExtension", "Default CAPTCHA services registered: 2Captcha, AntiCaptcha, CapMonster");
+    }
+
+    /**
+     * Clean up resources when the extension is unloaded
+     */
+    @Override
+    public void extensionUnloaded() {
+        logger.info("ResolverExtension", "Extension unloading started");
+        
+        // Clean up threads and executors
+        if (threadManager != null) {
+            threadManager.shutdown();
+        }
+        
+        if (threadPoolManager != null) {
+            threadPoolManager.shutdown();
+        }
+        
+        if (highLoadDetector != null) {
+            highLoadDetector.shutdown();
+        }
+        
+        logger.info("ResolverExtension", "Extension resources successfully released");
     }
 }

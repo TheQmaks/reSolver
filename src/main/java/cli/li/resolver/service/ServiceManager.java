@@ -133,10 +133,19 @@ public class ServiceManager {
                 continue;
             }
             
+            // Skip services with zero or negative balance
+            java.math.BigDecimal balance = service.getBalance();
+            if (balance.compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                logger.warning("ServiceManager", "Skipping service " + service.getName() + " due to insufficient balance: " + balance);
+                continue;
+            }
+            
             ICaptchaSolver solver = service.getSolver(captchaType);
             if (solver != null) {
                 logger.info("ServiceManager", "Found solver for " + captchaType +
-                        " using service: " + service.getName() + " (priority: " + service.getPriority() + ")");
+                        " using service: " + service.getName() + 
+                        " (priority: " + service.getPriority() + 
+                        ", balance: " + balance + ")");
                 return solver;
             }
         }

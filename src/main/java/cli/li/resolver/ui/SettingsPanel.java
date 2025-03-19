@@ -1,7 +1,7 @@
 package cli.li.resolver.ui;
 
-import java.awt.*;
 import javax.swing.*;
+import java.awt.*;
 
 import cli.li.resolver.settings.SettingsManager;
 import cli.li.resolver.thread.CaptchaSolverThreadManager;
@@ -63,17 +63,31 @@ public class SettingsPanel extends JPanel {
         JPanel monitoringPanel = new JPanel(new BorderLayout());
         monitoringPanel.setBorder(BorderFactory.createTitledBorder("Thread Monitoring"));
 
+        // Create panel for thread status information
+        JPanel threadStatusPanel = new JPanel(new GridLayout(3, 1, 5, 5));
+        
         // Active threads label
         JLabel activeThreadsLabel = new JLabel("Active Threads: 0/" + threadManager.threadPoolManager().getPoolSize());
-        monitoringPanel.add(activeThreadsLabel, BorderLayout.NORTH);
+        threadStatusPanel.add(activeThreadsLabel);
 
         // Queue status label
         JLabel queueStatusLabel = new JLabel("Queue Status: 0 items in queue");
-        monitoringPanel.add(queueStatusLabel, BorderLayout.CENTER);
+        threadStatusPanel.add(queueStatusLabel);
 
         // Load status label
         JLabel loadStatusLabel = new JLabel("Current Load: 0 requests/min");
-        monitoringPanel.add(loadStatusLabel, BorderLayout.SOUTH);
+        threadStatusPanel.add(loadStatusLabel);
+        
+        monitoringPanel.add(threadStatusPanel, BorderLayout.CENTER);
+        
+        // Add cancel button directly to monitoring panel
+        JPanel threadControlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton cancelAllTasksButton = new JButton("Cancel All Tasks");
+        cancelAllTasksButton.setToolTipText("Cancels all current CAPTCHA solving tasks");
+        cancelAllTasksButton.addActionListener(e -> cancelAllTasks());
+        threadControlPanel.add(cancelAllTasksButton);
+        
+        monitoringPanel.add(threadControlPanel, BorderLayout.SOUTH);
 
         // Start monitoring timer
         Timer timer = new Timer(1000, e -> {
@@ -97,7 +111,7 @@ public class SettingsPanel extends JPanel {
 
         saveButton.addActionListener(e -> {
             saveSettings();
-            JOptionPane.showMessageDialog(this, "Settings saved", "Save", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(UIHelper.getBurpFrame(), "Settings saved", "Save", JOptionPane.INFORMATION_MESSAGE);
         });
 
         // Add panels to main panel
@@ -113,5 +127,38 @@ public class SettingsPanel extends JPanel {
         settingsManager.setThreadPoolSize((Integer) threadPoolSizeSpinner.getValue());
         settingsManager.setQueueSize((Integer) queueSizeSpinner.getValue());
         settingsManager.setHighLoadThreshold((Integer) highLoadThresholdSpinner.getValue());
+    }
+    
+    /**
+     * Cancel all current CAPTCHA solving tasks
+     */
+    private void cancelAllTasks() {
+        try {
+            int cancelled = threadManager.cancelAllTasks();
+            
+            if (cancelled > 0) {
+                String message = "Cancelled " + cancelled + " tasks";
+                JOptionPane.showMessageDialog(
+                    UIHelper.getBurpFrame(),
+                    message,
+                    "Task Cancellation",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+            } else {
+                JOptionPane.showMessageDialog(
+                    UIHelper.getBurpFrame(),
+                    "No active tasks to cancel",
+                    "Task Cancellation",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                UIHelper.getBurpFrame(),
+                "Error cancelling tasks: " + ex.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
     }
 }

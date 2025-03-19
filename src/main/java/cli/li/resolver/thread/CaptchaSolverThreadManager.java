@@ -246,4 +246,37 @@ public record CaptchaSolverThreadManager(ThreadPoolManager threadPoolManager, Qu
     public HighLoadDetector highLoadDetector() {
         return highLoadDetector;
     }
+    
+    /**
+     * Shutdown the thread manager and all its resources
+     */
+    public void shutdown() {
+        logger.info("CaptchaSolverThreadManager", "Shutting down thread manager");
+        
+        if (threadPoolManager != null) {
+            threadPoolManager.shutdown();
+        }
+        
+        if (highLoadDetector != null) {
+            highLoadDetector.shutdown();
+        }
+        
+        logger.info("CaptchaSolverThreadManager", "Thread manager shutdown complete");
+    }
+    
+    /**
+     * Cancel all current CAPTCHA solving tasks
+     * @return Number of tasks cancelled
+     */
+    public int cancelAllTasks() {
+        logger.info("CaptchaSolverThreadManager", "Cancelling all current CAPTCHA solving tasks");
+        
+        if (threadPoolManager != null) {
+            int cancelled = threadPoolManager.cancelAllTasks();
+            logger.info("CaptchaSolverThreadManager", "Cancelled " + cancelled + " running CAPTCHA solving tasks");
+            return cancelled;
+        }
+        
+        return 0;
+    }
 }

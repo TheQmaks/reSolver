@@ -2,6 +2,8 @@ package cli.li.resolver.thread;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
+import java.util.ArrayList;
 
 import cli.li.resolver.settings.SettingsManager;
 
@@ -12,6 +14,7 @@ public class ThreadPoolManager {
     private final ExecutorService threadPool;
     private final SettingsManager settingsManager;
     private final AtomicInteger activeThreads = new AtomicInteger(0);
+    private final List<Future<?>> activeTasks = new ArrayList<>();
 
     public ThreadPoolManager(SettingsManager settingsManager) {
         this.settingsManager = settingsManager;
@@ -38,13 +41,22 @@ public class ThreadPoolManager {
      */
     public <T> Future<T> submit(Callable<T> task) {
         activeThreads.incrementAndGet();
-        return threadPool.submit(() -> {
+        Future<T> future = threadPool.submit(() -> {
             try {
                 return task.call();
             } finally {
                 activeThreads.decrementAndGet();
+                synchronized (activeTasks) {
+                    activeTasks.removeIf(f -> f.isDone() || f.isCancelled());
+                }
             }
         });
+        
+        synchronized (activeTasks) {
+            activeTasks.add(future);
+        }
+        
+        return future;
     }
 
     /**
@@ -62,11 +74,40 @@ public class ThreadPoolManager {
     public int getActiveThreadCount() {
         return activeThreads.get();
     }
+    
+    /**
+     * Cancel all running tasks
+     * @return Number of tasks cancelled
+     */
+    public int cancelAllTasks() {
+        int cancelledCount = 0;
+        
+        synchronized (activeTasks) {
+            // Remove all completed tasks from the list
+            activeTasks.removeIf(future -> future.isDone() || future.isCancelled());
+            
+            // Cancel all remaining active tasks
+            for (Future<?> future : activeTasks) {
+                if (!future.isDone() && !future.isCancelled()) {
+                    future.cancel(true);
+                    cancelledCount++;
+                }
+            }
+            
+            // Clear the task list
+            activeTasks.clear();
+        }
+        
+        return cancelledCount;
+    }
 
     /**
      * Shutdown the thread pool
      */
     public void shutdown() {
+        // Cancel all tasks on shutdown
+        cancelAllTasks();
+        
         threadPool.shutdown();
         try {
             if (!threadPool.awaitTermination(5, TimeUnit.SECONDS)) {
