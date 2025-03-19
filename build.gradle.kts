@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "cli.li"
-version = "1.0-SNAPSHOT"
+version = "1.1"
 
 repositories {
     mavenCentral()
@@ -17,7 +17,7 @@ dependencies {
 }
 
 tasks.jar {
-    archiveFileName.set("resolver-$version.jar")
+    archiveFileName.set("resolver-v$version.jar")
 
     manifest {
         attributes["Plugin"] = "reSolver"
