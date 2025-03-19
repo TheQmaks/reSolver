@@ -2,7 +2,6 @@ package cli.li.resolver.service.captcha;
 
 import java.util.Map;
 import java.util.HashMap;
-import java.time.Duration;
 import java.math.BigDecimal;
 
 import org.json.JSONObject;
@@ -75,8 +74,8 @@ public class AntiCaptchaService extends AbstractCaptchaService {
         requestJson.put("clientKey", apiKey);
         
         logger.debug(getClass().getSimpleName(), "Sending balance check request to Anti-Captcha API");
-        // Use reasonable timeout for balance check to prevent hanging threads
-        String response = httpClient.postJson(GET_BALANCE_URL, requestJson.toString(), Duration.ofSeconds(5));
+        // Note: Timeout is now controlled at the Future.get level, not HTTP request level
+        String response = httpClient.postJson(GET_BALANCE_URL, requestJson.toString());
         logger.debug(getClass().getSimpleName(), "Received balance response from Anti-Captcha API");
         
         return response;

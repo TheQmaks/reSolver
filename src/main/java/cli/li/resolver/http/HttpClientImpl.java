@@ -2,136 +2,123 @@ package cli.li.resolver.http;
 
 import java.net.URI;
 import java.util.Map;
-import java.time.Duration;
 import java.io.IOException;
 import java.net.URLEncoder;
+
 import org.json.JSONObject;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.stream.Collectors;
 import java.nio.charset.StandardCharsets;
 
+import burp.api.montoya.http.message.requests.HttpRequest;
+import burp.api.montoya.http.message.responses.HttpResponse;
+import burp.api.montoya.http.message.HttpRequestResponse;
+
+import cli.li.resolver.ResolverExtension;
+import cli.li.resolver.logger.LoggerService;
+
 /**
- * Modern HTTP client implementation using Java 11 HttpClient API
+ * HTTP client implementation using Burp's HTTP API
  * for interacting with CAPTCHA service APIs
  */
 public class HttpClientImpl implements BaseHttpClient {
 
-    private static final int DEFAULT_TIMEOUT_SECONDS = 30;
     private static final String USER_AGENT = "reSolver Burp Suite Extension";
+    private final LoggerService logger;
     
-    // Use a singleton HttpClient instance for better performance
-    private final HttpClient httpClient;
-
     public HttpClientImpl() {
-        // Configure the HttpClient with default settings
-        this.httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_2)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(Duration.ofSeconds(DEFAULT_TIMEOUT_SECONDS))
-                .build();
+        this.logger = LoggerService.getInstance();
+        logger.debug("HttpClientImpl", "Initialized HTTP client using Burp API");
     }
 
     @Override
     public String post(String url, Map<String, String> params) throws Exception {
-        return post(url, params, Duration.ofSeconds(DEFAULT_TIMEOUT_SECONDS));
-    }
-    
-    @Override
-    public String post(String url, Map<String, String> params, Duration timeout) throws Exception {
         // Build form data
         String formData = buildFormData(params);
         
-        // Create POST request
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("User-Agent", USER_AGENT)
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .timeout(timeout)
-                .POST(HttpRequest.BodyPublishers.ofString(formData))
-                .build();
+        logger.debug("HttpClientImpl", "Sending POST request to " + url + " with form data");
+        
+        // Create POST request using Burp API
+        HttpRequest request = HttpRequest.httpRequestFromUrl(url)
+                .withMethod("POST")
+                .withHeader("User-Agent", USER_AGENT)
+                .withHeader("Content-Type", "application/x-www-form-urlencoded")
+                .withBody(formData);
         
         // Send request and handle response
-        return sendRequest(request);
+        return sendRequest(request, url);
     }
 
     @Override
     public String postJson(String url, String jsonBody) throws Exception {
-        return postJson(url, jsonBody, Duration.ofSeconds(DEFAULT_TIMEOUT_SECONDS));
-    }
-    
-    @Override
-    public String postJson(String url, String jsonBody, Duration timeout) throws Exception {
-        // Create POST request with JSON body
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("User-Agent", USER_AGENT)
-                .header("Content-Type", "application/json")
-                .timeout(timeout)
-                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                .build();
+        logger.debug("HttpClientImpl", "Sending POST request to " + url + " with JSON body");
+        
+        // Create POST request with JSON body using Burp API
+        HttpRequest request = HttpRequest.httpRequestFromUrl(url)
+                .withMethod("POST")
+                .withHeader("User-Agent", USER_AGENT)
+                .withHeader("Content-Type", "application/json")
+                .withBody(jsonBody);
         
         // Send request and handle response
-        return sendRequest(request);
+        return sendRequest(request, url);
     }
     
     @Override
     public String postJson(String url, JSONObject jsonObject) throws Exception {
         return postJson(url, jsonObject.toString());
     }
-    
-    @Override
-    public String postJson(String url, JSONObject jsonObject, Duration timeout) throws Exception {
-        return postJson(url, jsonObject.toString(), timeout);
-    }
 
     @Override
     public String get(String url, Map<String, String> params) throws Exception {
-        return get(url, params, Duration.ofSeconds(DEFAULT_TIMEOUT_SECONDS));
-    }
-    
-    @Override
-    public String get(String url, Map<String, String> params, Duration timeout) throws Exception {
         // Create full URL with query parameters
         String fullUrl = url;
         if (!params.isEmpty()) {
             fullUrl += "?" + buildFormData(params);
         }
         
-        // Create GET request
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(fullUrl))
-                .header("User-Agent", USER_AGENT)
-                .timeout(timeout)
-                .GET()
-                .build();
+        logger.debug("HttpClientImpl", "Sending GET request to " + fullUrl);
+        
+        // Create GET request using Burp API
+        HttpRequest request = HttpRequest.httpRequestFromUrl(fullUrl)
+                .withMethod("GET")
+                .withHeader("User-Agent", USER_AGENT);
         
         // Send request and handle response
-        return sendRequest(request);
+        return sendRequest(request, fullUrl);
     }
     
     /**
-     * Sends an HTTP request and processes the response
+     * Sends an HTTP request using Burp's API and processes the response
      * 
      * @param request The HTTP request to send
+     * @param url Original URL for logging
      * @return The response body as a string
      * @throws IOException If an I/O error occurs
-     * @throws InterruptedException If the operation is interrupted
      */
-    private String sendRequest(HttpRequest request) throws IOException, InterruptedException {
+    private String sendRequest(HttpRequest request, String url) throws IOException {
         try {
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            // Parse URL to extract necessary information
+            new URI(url); // Validate the URL format
+            
+            // Use Burp's HTTP API to send the request
+            // Note: Burp doesn't support explicit timeouts, but it will respect the system's
+            // network timeout settings and proxy configurations automatically
+            HttpRequestResponse requestResponse = ResolverExtension.api.http().sendRequest(request);
+            HttpResponse response = requestResponse.response();
+            
+            if (response == null) {
+                throw new IOException("No response received from server: " + url);
+            }
             
             int statusCode = response.statusCode();
             if (statusCode >= 200 && statusCode < 300) {
-                return response.body();
+                return response.bodyToString();
             } else {
-                throw new IOException("HTTP error code: " + statusCode + ", response: " + response.body());
+                throw new IOException("HTTP error code: " + statusCode + ", response: " + response.bodyToString());
             }
-        } catch (IOException | InterruptedException e) {
-            // Rethrow but with more context
-            throw new IOException("HTTP request failed: " + request.uri() + " - " + e.getMessage(), e);
+        } catch (Exception e) {
+            // Rethrow with more context
+            throw new IOException("HTTP request failed: " + url + " - " + e.getMessage(), e);
         }
     }
     

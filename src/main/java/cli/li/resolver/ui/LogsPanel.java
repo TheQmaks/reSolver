@@ -205,11 +205,13 @@ public class LogsPanel extends JPanel {
      * Export logs to a file
      */
     private void exportLogs() {
+        // Create file chooser
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Export Logs");
-        fileChooser.setSelectedFile(new java.io.File("resolver_logs.txt"));
-
-        int result = fileChooser.showSaveDialog(this);
+        fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        
+        // Show save dialog
+        int result = fileChooser.showSaveDialog(UIHelper.getBurpFrame());
         if (result == JFileChooser.APPROVE_OPTION) {
             java.io.File file = fileChooser.getSelectedFile();
 
@@ -226,12 +228,12 @@ public class LogsPanel extends JPanel {
                     }
                 }
 
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(UIHelper.getBurpFrame(),
                         "Logs exported successfully to " + file.getAbsolutePath(),
                         "Export Complete",
                         JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception e) {
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(UIHelper.getBurpFrame(),
                         "Error exporting logs: " + e.getMessage(),
                         "Export Error",
                         JOptionPane.ERROR_MESSAGE);
