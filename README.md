@@ -297,11 +297,6 @@ These examples demonstrate how to use reSolver with the 2Captcha demo site. You 
 <p>Solving time depends on the workload of the chosen service. During high demand periods, waiting times can increase. You can adjust the timeout using the timeout_seconds parameter.</p>
 </details>
 
-<details>
-<summary><b>Does the extension work with Burp Suite Community Edition?</b></summary>
-<p>The extension is developed and tested for Burp Suite Professional. Some features may work with limitations or not work at all in the Community Edition.</p>
-</details>
-
 ## 👥 Contributing
 
 Contributions are welcome! If you want to contribute:
