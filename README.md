@@ -3,7 +3,7 @@
 ![reSolver Logo](https://github.com/TheQmaks/reSolver/blob/main/resources/logo.jpg?raw=true)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Java](https://img.shields.io/badge/Java-11%2B-orange)](https://www.oracle.com/java/)
+[![Java](https://img.shields.io/badge/Java-21%2B-orange)](https://www.oracle.com/java/)
 [![Burp Suite Extension](https://img.shields.io/badge/Burp%20Suite-Extension-purple)](https://portswigger.net/bappstore)
 
 
@@ -11,165 +11,164 @@ An essential tool for penetration testers and security professionals, allowing y
 
 <details>
   <summary><b>Extension UI preview</b></summary>
-  
+
   ![reSolver Preview](https://github.com/TheQmaks/reSolver/blob/main/resources/preview.gif?raw=true)
 </details>
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [Features](#-features)
-- [Demonstration Video](#-demonstration-video)
-- [Getting Started](#-getting-started)
-  - [Requirements](#requirements)
-  - [Installation](#installation)
-- [Usage](#-usage)
-  - [Configuring Services](#configuring-services)
-  - [Using CAPTCHA Placeholders](#using-captcha-placeholders)
-  - [Optional Parameters](#optional-parameters)
-  - [Basic Examples](#basic-examples)
-  - [Viewing Statistics](#viewing-statistics)
-- [Real-world Examples](#-real-world-examples-with-2captcha-demo)
-  - [reCAPTCHA v2 Standard](#recaptcha-v2-standard)
-  - [reCAPTCHA v2 Invisible](#recaptcha-v2-invisible)
-  - [reCAPTCHA v2 Enterprise](#recaptcha-v2-enterprise)
-  - [reCAPTCHA v3](#recaptcha-v3)
-  - [reCAPTCHA v3 Enterprise](#recaptcha-v3-enterprise)
-- [Building from Source](#-building-from-source)
-- [Compatibility](#-compatibility)
-- [FAQ](#-faq)
-- [Contributing](#-contributing)
-- [License](#-license)
+- [Features](#features)
+- [Demonstration Video](#demonstration-video)
+- [Getting Started](#getting-started)
+- [Usage](#usage)
+- [Real-world Examples](#real-world-examples-with-2captcha-demo)
+- [Building from Source](#building-from-source)
+- [Compatibility](#compatibility)
+- [FAQ](#faq)
+- [Contributing](#contributing)
+- [License](#license)
 
-## 🚀 Features
+## Features
 
-- **Automatic CAPTCHA Solving**:
-  - reCAPTCHA v2
-  - reCAPTCHA v3
+- **8 CAPTCHA types supported**:
+  - reCAPTCHA v2 (standard, invisible, enterprise)
+  - reCAPTCHA v3 (with action and min_score)
+  - hCaptcha
+  - Cloudflare Turnstile
+  - FunCaptcha (Arkose Labs)
+  - GeeTest v3 / v4
+  - AWS WAF CAPTCHA
 
-- **Support for Popular Services**:
+- **6 solving providers**:
   - [2Captcha](https://2captcha.com/)
+  - [RuCaptcha](https://rucaptcha.com/)
   - [Anti-Captcha](https://anti-captcha.com/)
-  - [CapMonster](https://capmonster.cloud/)
+  - [CapMonster Cloud](https://capmonster.cloud/)
+  - [CapSolver](https://capsolver.com/)
+  - [SolveCaptcha](https://solvecaptcha.com/)
 
-- **Robust Architecture**:
-  - Configurable thread management
-  - Retry logic with error handling
-  - Statistics tracking
-  - High load detection
-  - Custom timeout configuration
+- **Auto-Detection**: passively scans HTTP responses for embedded CAPTCHAs and generates ready-to-use placeholders (supports 16 CAPTCHA types including hCaptcha, Turnstile, FunCaptcha, GeeTest, Yandex SmartCaptcha, and more)
 
-## 🎥 Demonstration Video
+- **Smart provider selection**: priority-based ordering with circuit breaker for automatic failover between providers
+
+- **Statistics and monitoring**: per-provider success rates, average solve times, and balance tracking
+
+## Demonstration Video
 
 [![reSolver Demo Video](https://img.youtube.com/vi/9hI14Thj1aY/0.jpg)](https://www.youtube.com/watch?v=9hI14Thj1aY)
 
-This video was created to demonstrate the real-world application of the reSolver plugin for BurpSuite.
-In this video, we show an example of using it together with BurpSuite's built-in tool - Intruder.
-The video demonstrates that in just 1 minute, we successfully send 100 requests to the server across 10 threads and successfully bypass reCAPTCHA v2 verification.
+This video demonstrates the real-world application of reSolver with BurpSuite's Intruder tool. In 1 minute, 100 requests are sent across 10 threads, successfully bypassing reCAPTCHA v2.
 
-## 🚦 Getting Started
+## Getting Started
 
 ### Requirements
 - Burp Suite (latest version recommended)
-- Java 11+
+- Java 21+
 - Account with one of the supported CAPTCHA solving services
 
 ### Installation
 
-1. Download the latest version of the extension from [GitHub Releases](https://github.com/TheQmaks/reSolver/releases)
-2. In Burp Suite, go to Extensions → Installed
+1. Download the latest version from [GitHub Releases](https://github.com/TheQmaks/reSolver/releases)
+2. In Burp Suite, go to Extensions > Installed
 3. Click "Add" and select the downloaded JAR file
-4. After loading, the extension will be ready to use
 
-## 🛠️ Usage
+## Usage
 
 ### Configuring Services
 
-1. Go to the "Services" tab
-2. Enter your API keys for one or more services
-3. Enable the services you want to use
-4. The balance will be automatically checked and displayed when a valid API key is entered
+1. Go to the **Services** tab
+2. Enter your API keys for one or more providers
+3. Enable the providers you want to use
+4. Balance is checked automatically when a valid API key is entered
+5. Adjust priority order with the Priority Up/Down buttons (lower = tried first)
 
-### Using CAPTCHA Placeholders
+### Auto-Detection
 
-Add CAPTCHA placeholders to your requests using the following format:
+As you browse through Burp Suite, reSolver automatically detects CAPTCHAs in HTTP responses:
+
+1. Go to the **Detections** tab to see discovered CAPTCHAs
+2. Each detection shows the page URL, CAPTCHA type, site key, and a ready-to-use placeholder
+3. Click **Copy Placeholder** to copy it to your clipboard
+4. Paste the placeholder into your request in Repeater, Intruder, or any other Burp tool
+
+### Placeholder Format
 
 ```
 {{CAPTCHA[:]TYPE[:]SITEKEY[:]URL[:][OPTIONAL_PARAMS]}}
 ```
 
 Where:
-- `TYPE` is the CAPTCHA type code (e.g., `recaptchav2`, `recaptchav3`)
-- `SITEKEY` is the site key for the CAPTCHA
-- `URL` is the URL where the CAPTCHA is located
-- `OPTIONAL_PARAMS` are additional parameters as key-value pairs (comma-separated)
+- `TYPE` - CAPTCHA type code (see table below)
+- `SITEKEY` - the site key for the CAPTCHA
+- `URL` - URL of the page containing the CAPTCHA
+- `OPTIONAL_PARAMS` - additional parameters, comma-separated
 
-### Optional Parameters
+**Note:** The `[:]` separator is used instead of plain `:` to avoid conflicts with colons in URLs and site keys.
 
-The following optional parameters are supported:
+### Supported CAPTCHA Types
 
-- `timeout_seconds` - Custom timeout duration for CAPTCHA solving (default: 30 seconds)
-  - Minimum value: 10 seconds
-  - Maximum value: 120 seconds
-  - Example: `timeout_seconds=60` to set a 60-second timeout
+| Type | Code | Optional Parameters |
+|------|------|-------------------|
+| reCAPTCHA v2 | `recaptchav2` | `invisible`, `enterprise`, `timeout_seconds` |
+| reCAPTCHA v3 | `recaptchav3` | `action`, `min_score`, `enterprise`, `timeout_seconds` |
+| hCaptcha | `hcaptcha` | `timeout_seconds` |
+| Cloudflare Turnstile | `turnstile` | `timeout_seconds` |
+| FunCaptcha | `funcaptcha` | `timeout_seconds` |
+| GeeTest v3 | `geetest` | `timeout_seconds` |
+| GeeTest v4 | `geetestv4` | `timeout_seconds` |
+| AWS WAF | `awswaf` | `timeout_seconds` |
 
-- `invisible` - Indicates that the reCAPTCHA v2 is an invisible type
-  - Example: `invisible` to mark the CAPTCHA as invisible
+### Examples
 
-- `enterprise` - Indicates that the reCAPTCHA is an enterprise version
-  - Example: `enterprise` to use enterprise solving methods
-
-- For reCAPTCHA v3:
-  - `action` - The action name for reCAPTCHA v3 (default: "verify")
-  - `min_score` - Minimum score threshold for reCAPTCHA v3 (default: varies by service)
-
-### Basic Examples
-
-**reCAPTCHA v2 with default timeout:**
+**reCAPTCHA v2:**
 ```
-{{CAPTCHA[:]recaptchav2[:]6LcwIQwfAAAAANmAYa9nt-J_x0Sfh6QcY-x1Vioe[:]https://example.com}}
+{{CAPTCHA[:]recaptchav2[:]6LfD3PIbAAAAAJs_eEHvoOl75_83eXSqpPSRFJ_u[:]https://example.com}}
 ```
 
-**reCAPTCHA v2 with custom timeout (60 seconds):**
+**reCAPTCHA v2 invisible + enterprise:**
 ```
-{{CAPTCHA[:]recaptchav2[:]6LcwIQwfAAAAANmAYa9nt-J_x0Sfh6QcY-x1Vioe[:]https://example.com[:]timeout_seconds=60}}
-```
-
-**reCAPTCHA v2 Enterprise invisible with custom timeout:**
-```
-{{CAPTCHA[:]recaptchav2[:]6LcwIQwfAAAAANmAYa9nt-J_x0Sfh6QcY-x1Vioe[:]https://example.com[:]invisible,enterprise,timeout_seconds=60}}
+{{CAPTCHA[:]recaptchav2[:]6LfD3PIbAAAAAJs_...[:]https://example.com[:]invisible,enterprise}}
 ```
 
-**reCAPTCHA v3 with default parameters:**
+**reCAPTCHA v3 with action and min_score:**
 ```
-{{CAPTCHA[:]recaptchav3[:]6LcwIQwfAAAAANmAYa9nt-J_x0Sfh6QcY-x1Vioe[:]https://example.com}}
-```
-
-**reCAPTCHA v3 Enterprise with action and min_score:**
-```
-{{CAPTCHA[:]recaptchav3[:]6LcwIQwfAAAAANmAYa9nt-J_x0Sfh6QcY-x1Vioe[:]https://example.com[:]enterprise,action=login,min_score=0.7}}
+{{CAPTCHA[:]recaptchav3[:]6LcW00EUAAAA...[:]https://example.com[:]action=login,min_score=0.7}}
 ```
 
-### Viewing Statistics
+**hCaptcha:**
+```
+{{CAPTCHA[:]hcaptcha[:]a1b2c3d4-e5f6...[:]https://example.com}}
+```
 
-Navigate to the "Statistics" tab to view metrics about:
-- Number of attempts (success/failure)
-- Average solving time
-- Success rate per CAPTCHA type and service
+**Cloudflare Turnstile:**
+```
+{{CAPTCHA[:]turnstile[:]0x4AAAAAAA...[:]https://example.com}}
+```
 
-## 📝 Real-world Examples with 2Captcha Demo
+**FunCaptcha:**
+```
+{{CAPTCHA[:]funcaptcha[:]12345678-1234...[:]https://example.com}}
+```
 
-These examples demonstrate how to use reSolver with the 2Captcha demo site. You can test these examples to see the extension in action.
+**AWS WAF:**
+```
+{{CAPTCHA[:]awswaf[:]AQIDAHjcYu/GjX...[:]https://example.com}}
+```
+
+## Real-world Examples with 2Captcha Demo
+
+These examples work with the [2Captcha demo site](https://2captcha.com/demo). You can test them to see the extension in action.
 
 ### reCAPTCHA v2 Standard
 
 <details>
   <summary><b>View</b></summary>
-  
+
   ```http
   POST /api/v1/captcha-demo/recaptcha/verify HTTP/2
   Host: 2captcha.com
   Content-Type: application/json
-  
+
   {
     "siteKey": "6LfD3PIbAAAAAJs_eEHvoOl75_83eXSqpPSRFJ_u",
     "answer": "{{CAPTCHA[:]recaptchav2[:]6LfD3PIbAAAAAJs_eEHvoOl75_83eXSqpPSRFJ_u[:]https://2captcha.com/demo/recaptcha-v2}}"
@@ -181,32 +180,15 @@ These examples demonstrate how to use reSolver with the 2Captcha demo site. You 
 
 <details>
   <summary><b>View</b></summary>
-  
+
   ```http
   POST /api/v1/captcha-demo/recaptcha/verify HTTP/2
   Host: 2captcha.com
   Content-Type: application/json
-  
+
   {
     "siteKey": "6LdO5_IbAAAAAAeVBL9TClS19NUTt5wswEb3Q7C5",
     "answer": "{{CAPTCHA[:]recaptchav2[:]6LdO5_IbAAAAAAeVBL9TClS19NUTt5wswEb3Q7C5[:]https://2captcha.com/demo/recaptcha-v2-invisible[:]invisible}}"
-  }
-  ```
-</details>
-
-### reCAPTCHA v2 Callback
-
-<details>
-  <summary><b>View</b></summary>
-  
-  ```http
-  POST /api/v1/captcha-demo/recaptcha/verify HTTP/2
-  Host: 2captcha.com
-  Content-Type: application/json
-  
-  {
-    "siteKey": "6LfD3PIbAAAAAJs_eEHvoOl75_83eXSqpPSRFJ_u",
-    "answer": "{{CAPTCHA[:]recaptchav2[:]6LfD3PIbAAAAAJs_eEHvoOl75_83eXSqpPSRFJ_u[:]https://2captcha.com/demo/recaptcha-v2-callback}}"
   }
   ```
 </details>
@@ -215,12 +197,12 @@ These examples demonstrate how to use reSolver with the 2Captcha demo site. You 
 
 <details>
   <summary><b>View</b></summary>
-  
+
   ```http
   POST /api/v1/captcha-demo/recaptcha-enterprise/verify HTTP/2
   Host: 2captcha.com
   Content-Type: application/json
-  
+
   {
     "siteKey": "6Lf26sUnAAAAAIKLuWNYgRsFUfmI-3Lex3xT5N-s",
     "token": "{{CAPTCHA[:]recaptchav2[:]6Lf26sUnAAAAAIKLuWNYgRsFUfmI-3Lex3xT5N-s[:]https://2captcha.com/demo/recaptcha-v2-enterprise[:]enterprise}}"
@@ -232,12 +214,12 @@ These examples demonstrate how to use reSolver with the 2Captcha demo site. You 
 
 <details>
   <summary><b>View</b></summary>
-  
+
   ```http
   POST /api/v1/captcha-demo/recaptcha/verify HTTP/2
   Host: 2captcha.com
   Content-Type: application/json
-  
+
   {
     "siteKey": "6Lcyqq8oAAAAAJE7eVJ3aZp_hnJcI6LgGdYD8lge",
     "answer": "{{CAPTCHA[:]recaptchav3[:]6Lcyqq8oAAAAAJE7eVJ3aZp_hnJcI6LgGdYD8lge[:]https://2captcha.com/demo/recaptcha-v3[:]min_score=0.7}}"
@@ -249,12 +231,12 @@ These examples demonstrate how to use reSolver with the 2Captcha demo site. You 
 
 <details>
   <summary><b>View</b></summary>
-  
+
   ```http
   POST /api/v1/captcha-demo/recaptcha-enterprise/verify HTTP/2
   Host: 2captcha.com
   Content-Type: application/json
-  
+
   {
     "siteKey": "6Lel38UnAAAAAMRwKj9qLH2Ws4Tf2uTDQCyfgR6b",
     "token": "{{CAPTCHA[:]recaptchav3[:]6Lel38UnAAAAAMRwKj9qLH2Ws4Tf2uTDQCyfgR6b[:]https://2captcha.com/demo/recaptcha-v3-enterprise[:]enterprise,min_score=0.9}}"
@@ -262,7 +244,41 @@ These examples demonstrate how to use reSolver with the 2Captcha demo site. You 
   ```
 </details>
 
-## 📦 Building from Source
+### hCaptcha
+
+<details>
+  <summary><b>View</b></summary>
+
+  ```http
+  POST /api/v1/captcha-demo/hcaptcha/verify HTTP/2
+  Host: 2captcha.com
+  Content-Type: application/json
+
+  {
+    "siteKey": "f7de0da3-3303-44e8-ab48-fa32ff8cbe7c",
+    "answer": "{{CAPTCHA[:]hcaptcha[:]f7de0da3-3303-44e8-ab48-fa32ff8cbe7c[:]https://2captcha.com/demo/hcaptcha}}"
+  }
+  ```
+</details>
+
+### Cloudflare Turnstile
+
+<details>
+  <summary><b>View</b></summary>
+
+  ```http
+  POST /api/v1/captcha-demo/cloudflare-turnstile/verify HTTP/2
+  Host: 2captcha.com
+  Content-Type: application/json
+
+  {
+    "siteKey": "0x4AAAAAAAVrOwQWPlm3Bnr5",
+    "answer": "{{CAPTCHA[:]turnstile[:]0x4AAAAAAAVrOwQWPlm3Bnr5[:]https://2captcha.com/demo/cloudflare-turnstile}}"
+  }
+  ```
+</details>
+
+## Building from Source
 
 1. Clone the repository:
    ```bash
@@ -274,39 +290,40 @@ These examples demonstrate how to use reSolver with the 2Captcha demo site. You 
    ```bash
    ./gradlew build
    ```
-   or for Windows:
-   ```bash
-   gradlew.bat build
-   ```
 
 3. Find the JAR file in the `build/libs` directory
 
 4. Load the extension in Burp Suite from the Extensions tab
 
-## 🔄 Compatibility
+## Compatibility
 
 - **Burp Suite**: 2024.x and newer
-- **Java**: 11 and newer
+- **Java**: 21 and newer
 - **Operating Systems**: Windows, macOS, Linux
 
-## ❓ FAQ
+## FAQ
 
 <details>
 <summary><b>Which CAPTCHA solving service is the best?</b></summary>
-<p> Each service has its advantages. 2Captcha is typically cheaper, while Anti-Captcha and CapMonster are often faster. We recommend configuring multiple services with different priorities for optimal results. </p>
+<p>Each service has its advantages. 2Captcha is typically cheaper, while Anti-Captcha and CapMonster are often faster. Configure multiple providers with different priorities — reSolver will automatically fail over to the next provider if one fails.</p>
 </details>
 
 <details>
 <summary><b>How do I find the SiteKey for a CAPTCHA?</b></summary>
-<p>Usually, the SiteKey can be found in the page source code. Look at the HTML code and find the "data-sitekey" attribute in a div element with class "g-recaptcha" or similar.</p>
+<p>The easiest way is to use reSolver's <b>Auto-Detection</b> feature — just browse the target site and check the <b>Detections</b> tab for discovered CAPTCHAs with ready-to-use placeholders. Alternatively, look for the <code>data-sitekey</code> attribute in the page source.</p>
 </details>
 
 <details>
 <summary><b>Why does CAPTCHA solving take a long time?</b></summary>
-<p>Solving time depends on the workload of the chosen service. During high demand periods, waiting times can increase. You can adjust the timeout using the timeout_seconds parameter.</p>
+<p>Solving time depends on the provider's workload. You can adjust the timeout using the <code>timeout_seconds</code> parameter (10-120 seconds, default 30). Consider configuring multiple providers for faster results.</p>
 </details>
 
-## 👥 Contributing
+<details>
+<summary><b>What if my provider doesn't support a CAPTCHA type?</b></summary>
+<p>Check the <b>Supported Types</b> column in the Services tab. Not all providers support all types. Configure a provider that supports the CAPTCHA type you need. Auto-Detection will detect CAPTCHAs even if no provider can solve them yet.</p>
+</details>
+
+## Contributing
 
 Contributions are welcome! If you want to contribute:
 
@@ -325,15 +342,6 @@ Contributions are welcome! If you want to contribute:
    ```
 5. Create a Pull Request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-This means you are free to:
-- Use, copy, modify, and distribute the software
-- Use the software for commercial purposes
-- Sublicense and distribute copies of the software as part of your own projects
-
-Under the following terms:
-- The original copyright notice and permission notice shall be included in all copies or substantial portions of the software
-- The software is provided "as is", without any warranties
