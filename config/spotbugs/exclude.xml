@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!--
+        SpotBugs exclusion filter for reSolver.
+        Suppresses false positives common in Swing-based Burp Suite extensions.
+    -->
+
+    <!-- EI_EXPOSE_REP / EI_EXPOSE_REP2: internal extension code, not a library -->
+    <Match>
+        <Or>
+            <Bug pattern="EI_EXPOSE_REP"/>
+            <Bug pattern="EI_EXPOSE_REP2"/>
+        </Or>
+    </Match>
+
+    <!-- Swing UI panels: serialization warnings are not relevant -->
+    <Match>
+        <Package name="cli.li.resolver.ui"/>
+        <Or>
+            <Bug pattern="SE_BAD_FIELD"/>
+            <Bug pattern="SE_BAD_FIELD_STORE"/>
+            <Bug pattern="SE_NO_SERIALVERSIONID"/>
+        </Or>
+    </Match>
+
+    <!-- Renderer classes: same Swing serialization noise -->
+    <Match>
+        <Package name="cli.li.resolver.ui.renderer"/>
+        <Bug pattern="SE_NO_SERIALVERSIONID"/>
+    </Match>
+
+    <!-- Inner table models in UI panels -->
+    <Match>
+        <Package name="cli.li.resolver.ui"/>
+        <Bug pattern="SIC_INNER_SHOULD_BE_STATIC"/>
+    </Match>
+
+    <!-- ResolverExtension: static MontoyaApi field is the standard Burp pattern -->
+    <Match>
+        <Class name="cli.li.resolver.ResolverExtension"/>
+        <Or>
+            <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/>
+            <Bug pattern="MS_CANNOT_BE_FINAL"/>
+        </Or>
+    </Match>
+
+    <!-- Singleton accessors: intentional by design -->
+    <Match>
+        <Or>
+            <Class name="cli.li.resolver.logger.LoggerService"/>
+            <Class name="cli.li.resolver.ui.UIHelper"/>
+        </Or>
+        <Bug pattern="MS_EXPOSE_REP"/>
+    </Match>
+
+    <!-- Test classes: relaxed analysis -->
+    <Match>
+        <Package name="~cli\.li\.resolver\..*Test"/>
+        <Bug category="STYLE"/>
+    </Match>
+</FindBugsFilter>

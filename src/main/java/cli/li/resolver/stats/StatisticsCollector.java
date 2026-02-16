@@ -8,11 +8,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import cli.li.resolver.service.ServiceManager;
 import cli.li.resolver.captcha.model.CaptchaType;
-import cli.li.resolver.captcha.solver.ICaptchaSolver;
-import cli.li.resolver.service.captcha.ICaptchaService;
+import cli.li.resolver.provider.ProviderService;
 
 /**
- * Collector for CAPTCHA solving statistics
+ * Collector for CAPTCHA solving statistics.
+ * Updated to work with ProviderService instead of ICaptchaService/ICaptchaSolver.
  */
 public class StatisticsCollector {
     private final ServiceManager serviceManager;
@@ -28,11 +28,11 @@ public class StatisticsCollector {
     /**
      * Record a CAPTCHA solve attempt
      * @param captchaType CAPTCHA type
-     * @param solver CAPTCHA solver used
+     * @param providerId ID of the provider used for solving
      * @param success Whether the attempt was successful
      * @param solvingTimeMs Time taken to solve the CAPTCHA
      */
-    public void recordSolveAttempt(CaptchaType captchaType, ICaptchaSolver solver, boolean success, long solvingTimeMs) {
+    public void recordSolveAttempt(CaptchaType captchaType, String providerId, boolean success, long solvingTimeMs) {
         // Update global statistics
         totalAttempts.incrementAndGet();
         if (success) {
@@ -43,14 +43,6 @@ public class StatisticsCollector {
         // Update type-specific statistics
         TypeStats stats = typeStats.computeIfAbsent(captchaType, k -> new TypeStats());
         stats.recordAttempt(success, solvingTimeMs);
-
-        // Update service-specific statistics
-        for (ICaptchaService service : serviceManager.getServicesInPriorityOrder()) {
-            if (service.getSolver(captchaType) == solver) {
-                service.getStatistics().recordAttempt(captchaType, success, solvingTimeMs);
-                break;
-            }
-        }
     }
 
     /**
@@ -104,9 +96,9 @@ public class StatisticsCollector {
         totalSolvingTimeMs.set(0);
         typeStats.clear();
 
-        // Reset service statistics
-        for (ICaptchaService service : serviceManager.getServicesInPriorityOrder()) {
-            service.getStatistics(); // Create a new statistics object
+        // Reset provider statistics
+        for (ProviderService ps : serviceManager.getAllProviderServices()) {
+            ps.getStatistics().reset();
         }
     }
 

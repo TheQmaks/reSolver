@@ -2,7 +2,11 @@ package cli.li.resolver.ui;
 
 import java.awt.*;
 import javax.swing.*;
-import javax.swing.text.*;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyleContext;
+import javax.swing.text.StyledDocument;
 import java.util.function.Consumer;
 import java.time.format.DateTimeFormatter;
 
@@ -13,7 +17,7 @@ import cli.li.resolver.logger.LoggerService.LogLevel;
 /**
  * Panel for displaying logs
  */
-public class LogsPanel extends JPanel {
+public class LogsPanel extends BasePanel {
     private final LoggerService loggerService;
     private final JTextPane logTextPane;
     private final JComboBox<LogLevel> logLevelFilter;
@@ -22,6 +26,7 @@ public class LogsPanel extends JPanel {
     private final StyleContext styleContext;
     private final StyledDocument document;
     private final JCheckBox autoScrollCheckbox;
+    private final Consumer<LogEntry> logListener;
 
     public LogsPanel() {
         this.loggerService = LoggerService.getInstance();
@@ -29,38 +34,38 @@ public class LogsPanel extends JPanel {
 
         setLayout(new BorderLayout());
 
-        // Create text area for logs
         logTextPane = new JTextPane();
         logTextPane.setEditable(false);
         document = logTextPane.getStyledDocument();
         styleContext = StyleContext.getDefaultStyleContext();
-
-        // Set up text styles for different log levels
         setupTextStyles();
 
-        JScrollPane scrollPane = new JScrollPane(logTextPane);
-
-        // Create control panel
-        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-
-        // Log level filter
-        controlPanel.add(new JLabel("Log Level:"));
         logLevelFilter = new JComboBox<>(LogLevel.values());
         logLevelFilter.setSelectedItem(LogLevel.INFO);
         logLevelFilter.addActionListener(e -> refreshLogs());
-        controlPanel.add(logLevelFilter);
-
-        // Source filter
-        controlPanel.add(new JLabel("Source:"));
         sourceFilter = new JTextField(15);
         sourceFilter.addActionListener(e -> refreshLogs());
-        controlPanel.add(sourceFilter);
-
-        // Auto-scroll checkbox
         autoScrollCheckbox = new JCheckBox("Auto-scroll", true);
+
+        add(createControlPanel(), BorderLayout.NORTH);
+        add(new JScrollPane(logTextPane), BorderLayout.CENTER);
+
+        logListener = createLogListener();
+        loggerService.addListener(logListener);
+
+        loggerService.info("LogsPanel", "Logs panel initialized");
+        refreshLogs();
+    }
+
+    private JPanel createControlPanel() {
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+
+        controlPanel.add(new JLabel("Log Level:"));
+        controlPanel.add(logLevelFilter);
+        controlPanel.add(new JLabel("Source:"));
+        controlPanel.add(sourceFilter);
         controlPanel.add(autoScrollCheckbox);
 
-        // Clear button
         JButton clearButton = new JButton("Clear Logs");
         clearButton.addActionListener(e -> {
             loggerService.clearLogs();
@@ -72,73 +77,68 @@ public class LogsPanel extends JPanel {
         });
         controlPanel.add(clearButton);
 
-        // Refresh button
         JButton refreshButton = new JButton("Refresh");
         refreshButton.addActionListener(e -> refreshLogs());
         controlPanel.add(refreshButton);
 
-        // Export button
         JButton exportButton = new JButton("Export Logs");
         exportButton.addActionListener(e -> exportLogs());
         controlPanel.add(exportButton);
 
-        // Add components to main panel
-        add(controlPanel, BorderLayout.NORTH);
-        add(scrollPane, BorderLayout.CENTER);
+        return controlPanel;
+    }
 
-        // Register as a log listener
-        loggerService.addListener(new Consumer<LogEntry>() {
-            @Override
-            public void accept(LogEntry entry) {
-                if (entry == null) {
-                    // Clear logs signal
-                    SwingUtilities.invokeLater(() -> {
-                        try {
-                            document.remove(0, document.getLength());
-                        } catch (BadLocationException ex) {
-                            // Ignore
-                        }
-                    });
-                    return;
-                }
+    private Consumer<LogEntry> createLogListener() {
+        return entry -> {
+            if (entry == null) {
+                SwingUtilities.invokeLater(() -> {
+                    try {
+                        document.remove(0, document.getLength());
+                    } catch (BadLocationException ex) {
+                        // Ignore
+                    }
+                });
+                return;
+            }
 
+            SwingUtilities.invokeLater(() -> {
                 LogLevel selectedLevel = (LogLevel) logLevelFilter.getSelectedItem();
                 String selectedSource = sourceFilter.getText();
 
-                if (entry.getLevel().ordinal() >= selectedLevel.ordinal() &&
-                        (selectedSource.isEmpty() || entry.getSource().contains(selectedSource))) {
-                    SwingUtilities.invokeLater(() -> appendLog(entry));
+                if (entry.getLevel().ordinal() >= selectedLevel.ordinal()
+                        && (selectedSource.isEmpty() || entry.getSource().contains(selectedSource))) {
+                    appendLog(entry);
                 }
-            }
-        });
+            });
+        };
+    }
 
-        // Add some initial content
-        loggerService.info("LogsPanel", "Logs panel initialized");
-
-        // Initial log display
-        refreshLogs();
+    @Override
+    public void dispose() {
+        super.dispose();
+        loggerService.removeListener(logListener);
     }
 
     /**
      * Set up text styles for different log levels
      */
     private void setupTextStyles() {
-        // Debug - Gray
+        // Debug - secondary/muted color
         Style debugStyle = styleContext.addStyle("DEBUG", null);
-        StyleConstants.setForeground(debugStyle, Color.GRAY);
+        StyleConstants.setForeground(debugStyle, UIHelper.getSecondaryTextColor());
 
-        // Info - Black
+        // Info - primary text color
         Style infoStyle = styleContext.addStyle("INFO", null);
-        StyleConstants.setForeground(infoStyle, Color.BLACK);
+        StyleConstants.setForeground(infoStyle, UIHelper.getTextColor());
 
-        // Warning - Orange
+        // Warning - theme-aware amber/orange
         Style warningStyle = styleContext.addStyle("WARNING", null);
-        StyleConstants.setForeground(warningStyle, Color.ORANGE);
+        StyleConstants.setForeground(warningStyle, UIHelper.getWarningColor());
         StyleConstants.setBold(warningStyle, true);
 
-        // Error - Red
+        // Error - theme-aware red
         Style errorStyle = styleContext.addStyle("ERROR", null);
-        StyleConstants.setForeground(errorStyle, Color.RED);
+        StyleConstants.setForeground(errorStyle, UIHelper.getErrorColor());
         StyleConstants.setBold(errorStyle, true);
     }
 
@@ -215,7 +215,7 @@ public class LogsPanel extends JPanel {
         if (result == JFileChooser.APPROVE_OPTION) {
             java.io.File file = fileChooser.getSelectedFile();
 
-            try (java.io.PrintWriter writer = new java.io.PrintWriter(file)) {
+            try (java.io.PrintWriter writer = new java.io.PrintWriter(file, java.nio.charset.StandardCharsets.UTF_8)) {
                 // Get selected filters
                 LogLevel selectedLevel = (LogLevel) logLevelFilter.getSelectedItem();
                 String selectedSource = sourceFilter.getText();

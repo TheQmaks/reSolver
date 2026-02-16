@@ -1,6 +1,9 @@
 package cli.li.resolver.http;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,6 +48,7 @@ public class PlaceholderParser {
             Matcher matcher = PLACEHOLDER_PATTERN.matcher(body);
             while (matcher.find()) {
                 PlaceholderLocation location = parsePlaceholder(matcher, PlaceholderLocationType.BODY);
+                if (location == null) continue;
                 locations.add(location);
                 logger.info("PlaceholderParser", "Found CAPTCHA placeholder in body: " + location.captchaRequest().captchaType() +
                         " for siteKey: " + location.captchaRequest().siteKey());
@@ -55,6 +59,7 @@ public class PlaceholderParser {
         Matcher urlMatcher = PLACEHOLDER_PATTERN.matcher(url);
         while (urlMatcher.find()) {
             PlaceholderLocation location = parsePlaceholder(urlMatcher, PlaceholderLocationType.URL);
+            if (location == null) continue;
             locations.add(location);
             logger.info("PlaceholderParser", "Found CAPTCHA placeholder in URL: " + location.captchaRequest().captchaType() +
                     " for siteKey: " + location.captchaRequest().siteKey());
@@ -65,6 +70,7 @@ public class PlaceholderParser {
             Matcher headerMatcher = PLACEHOLDER_PATTERN.matcher(header.value());
             while (headerMatcher.find()) {
                 PlaceholderLocation location = parsePlaceholder(headerMatcher, PlaceholderLocationType.HEADER, header.name());
+                if (location == null) continue;
                 locations.add(location);
                 logger.info("PlaceholderParser", "Found CAPTCHA placeholder in header '" + header.name() + "': " +
                         location.captchaRequest().captchaType() + " for siteKey: " + location.captchaRequest().siteKey());
@@ -113,18 +119,18 @@ public class PlaceholderParser {
         try {
             captchaType = CaptchaType.fromCode(captchaTypeStr);
         } catch (IllegalArgumentException e) {
-            // Unknown CAPTCHA type, use default
-            logger.warning("PlaceholderParser", "Unknown CAPTCHA type: " + captchaTypeStr +
-                    ", falling back to RECAPTCHA_V2. " + e.getMessage());
-            captchaType = CaptchaType.RECAPTCHA_V2;
+            logger.warning("PlaceholderParser", "Unknown CAPTCHA type '" + captchaTypeStr +
+                    "' — skipping placeholder. Valid types: recaptchav2, recaptchav3, hcaptcha, " +
+                    "turnstile, funcaptcha, geetest, geetestv4, awswaf");
+            return null;
         }
 
         // Parse optional parameters
         Map<String, String> additionalParams = new HashMap<>();
         if (optionalParams != null && !optionalParams.isEmpty()) {
             String[] params = optionalParams.split(",");
-            for (String param : params) {
-                param = param.trim();
+            for (String rawParam : params) {
+                String param = rawParam.trim();
                 if (param.contains("=")) {
                     // Handle key-value parameters (e.g., timeout_seconds=60)
                     String[] keyValue = param.split("=", 2);

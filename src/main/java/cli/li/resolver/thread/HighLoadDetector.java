@@ -1,64 +1,73 @@
 package cli.li.resolver.thread;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import cli.li.resolver.settings.SettingsManager;
 
 /**
- * Detector for high load situations
+ * Detector for high load situations using a sliding window of timestamps.
+ * No scheduled executor is needed - timestamps older than 60 seconds are
+ * cleaned up lazily when queried.
  */
 public class HighLoadDetector {
+    private static final long WINDOW_MS = 60_000L; // 60 seconds
+
     private final SettingsManager settingsManager;
-    private final AtomicInteger requestsInLastMinute = new AtomicInteger(0);
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final ConcurrentLinkedDeque<Long> timestamps = new ConcurrentLinkedDeque<>();
 
     public HighLoadDetector(SettingsManager settingsManager) {
         this.settingsManager = settingsManager;
-
-        // Schedule task to reset counter every minute
-        scheduler.scheduleAtFixedRate(() -> {
-            requestsInLastMinute.set(0);
-        }, 1, 1, TimeUnit.MINUTES);
     }
 
     /**
-     * Register a new request
+     * Register a new request by adding the current timestamp
      */
     public void registerRequest() {
-        requestsInLastMinute.incrementAndGet();
+        timestamps.addLast(System.currentTimeMillis());
     }
 
     /**
-     * Check if current load is high
+     * Check if current load is high.
+     * Removes expired timestamps and compares the count with the threshold.
      * @return true if load is high
      */
     public boolean isHighLoad() {
-        return requestsInLastMinute.get() > settingsManager.getHighLoadThreshold();
+        cleanExpired();
+        return timestamps.size() > settingsManager.getHighLoadThreshold();
     }
 
     /**
-     * Get the number of requests in the last minute
-     * @return Request count
+     * Get the number of requests in the last minute.
+     * Removes expired timestamps before counting.
+     * @return Request count in the sliding window
      */
     public int getRequestsInLastMinute() {
-        return requestsInLastMinute.get();
+        cleanExpired();
+        return timestamps.size();
     }
 
     /**
-     * Shutdown the scheduler
+     * Remove timestamps older than the sliding window (60 seconds)
+     */
+    private void cleanExpired() {
+        long cutoff = System.currentTimeMillis() - WINDOW_MS;
+        Iterator<Long> it = timestamps.iterator();
+        while (it.hasNext()) {
+            if (it.next() < cutoff) {
+                it.remove();
+            } else {
+                // Timestamps are added in order, so once we find one that's not expired,
+                // all subsequent ones are also not expired
+                break;
+            }
+        }
+    }
+
+    /**
+     * Shutdown - no-op since there is no scheduled executor to shut down
      */
     public void shutdown() {
-        scheduler.shutdown();
-        try {
-            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                scheduler.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            scheduler.shutdownNow();
-        }
+        // No executor to shut down; sliding window is self-cleaning
     }
 }

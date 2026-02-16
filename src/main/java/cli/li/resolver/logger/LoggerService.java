@@ -88,7 +88,7 @@ public class LoggerService {
 
     private LoggerService() {
         logs = new CopyOnWriteArrayList<>();
-        listeners = new ArrayList<>();
+        listeners = new CopyOnWriteArrayList<>();
         maxLogSize = 1000; // Default max log size
     }
 

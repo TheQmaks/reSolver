@@ -6,35 +6,44 @@ import java.math.BigDecimal;
 import javax.swing.table.AbstractTableModel;
 
 import cli.li.resolver.service.ServiceManager;
-import cli.li.resolver.service.captcha.ICaptchaService;
+import cli.li.resolver.provider.ProviderService;
 
 /**
- * Table model for CAPTCHA services
+ * Table model for CAPTCHA provider services.
+ * Columns: Provider, API Key, Enabled, Priority, Balance, Supported Types.
  */
 public class ServiceTableModel extends AbstractTableModel {
-    private final String[] columnNames = {"Service", "API Key", "Enabled", "Priority", "Balance"};
-    private final List<ICaptchaService> services;
+    private final String[] columnNames = {"Provider", "API Key", "Enabled", "Priority", "Balance", "Supported Types"};
+    private final List<ProviderService> services;
     private final ServiceManager serviceManager;
 
     public ServiceTableModel(ServiceManager serviceManager) {
         this.serviceManager = serviceManager;
         this.services = new ArrayList<>();
-        refreshData();
+        reloadServices();
     }
 
     /**
-     * Refresh table data
+     * Refresh table data from ServiceManager and trigger async balance fetches.
      */
     public void refreshData() {
-        fireTableDataChanged();
+        // Trigger async balance fetches
+        for (ProviderService service : services) {
+            service.refreshBalance();
+        }
+        // Notify table that cell values may have changed (without rebuilding the list)
+        if (!services.isEmpty()) {
+            fireTableRowsUpdated(0, services.size() - 1);
+        }
     }
 
-    @Override
-    public void fireTableDataChanged() {
-        // Update services list
+    /**
+     * Rebuild the services list from ServiceManager. Called on initial load
+     * and when the list structure changes (e.g. priority reorder).
+     */
+    public void reloadServices() {
         services.clear();
-        services.addAll(serviceManager.getAllServicesInPriorityOrder());
-
+        services.addAll(serviceManager.getAllProviderServices());
         super.fireTableDataChanged();
     }
 
@@ -55,45 +64,42 @@ public class ServiceTableModel extends AbstractTableModel {
 
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
-        ICaptchaService service = services.get(rowIndex);
+        ProviderService service = services.get(rowIndex);
         return switch (columnIndex) {
-            case 0 -> service.getName();
+            case 0 -> service.getDisplayName();
             case 1 -> service.getApiKey();
             case 2 -> service.isEnabled();
             case 3 -> service.getPriority();
-            case 4 -> service.getBalance();
+            case 4 -> service.getCachedBalance();
+            case 5 -> String.join(", ", service.getSupportedTypes());
             default -> null;
         };
     }
 
     @Override
     public boolean isCellEditable(int rowIndex, int columnIndex) {
-        // Only API key and Enabled columns are editable
+        // Only API Key and Enabled columns are editable
         return columnIndex == 1 || columnIndex == 2;
     }
 
     @Override
     public void setValueAt(Object value, int rowIndex, int columnIndex) {
-        ICaptchaService service = services.get(rowIndex);
+        ProviderService service = services.get(rowIndex);
         switch (columnIndex) {
-            case 1:
-                service.setApiKey((String) value);
-                break;
-            case 2:
-                service.setEnabled((Boolean) value);
-                break;
+            case 1 -> service.setApiKey((String) value);
+            case 2 -> service.setEnabled((Boolean) value);
+            default -> { }
         }
-        
+
         // Auto-save after each edit
         serviceManager.saveServiceConfigs();
-        
+
         // Update the cell and possibly refresh balance for API key changes
         fireTableCellUpdated(rowIndex, columnIndex);
-        
-        // If API key changed, update the balance
+
+        // If API key changed, force-refresh the balance immediately
         if (columnIndex == 1 && value != null && !((String) value).isEmpty()) {
-            serviceManager.updateBalance(service);
-            fireTableCellUpdated(rowIndex, 4); // Update balance cell
+            service.forceRefreshBalance();
         }
     }
 
@@ -108,57 +114,57 @@ public class ServiceTableModel extends AbstractTableModel {
     }
 
     /**
-     * Get the service at a specific row
+     * Get the provider service at a specific row
      * @param rowIndex Row index
-     * @return Service at the row
+     * @return ProviderService at the row
      */
-    public ICaptchaService getServiceAt(int rowIndex) {
+    public ProviderService getServiceAt(int rowIndex) {
         return services.get(rowIndex);
     }
-    
+
     /**
      * Move a service to a new position in the priority order
      * @param fromIndex Source index
      * @param toIndex Target index
      */
     public void moveService(int fromIndex, int toIndex) {
-        if (fromIndex < 0 || fromIndex >= services.size() || 
-            toIndex < 0 || toIndex >= services.size() || 
+        if (fromIndex < 0 || fromIndex >= services.size() ||
+            toIndex < 0 || toIndex >= services.size() ||
             fromIndex == toIndex) {
             return;
         }
 
         // Get the service to move
-        ICaptchaService movedService = services.get(fromIndex);
-        
+        ProviderService movedService = services.get(fromIndex);
+
         // Remove it temporarily from our list to avoid conflicts
         services.remove(fromIndex);
-        
+
         // Add it back at the target index
         if (toIndex >= services.size()) {
             services.add(movedService);
         } else {
             services.add(toIndex, movedService);
         }
-        
+
         // Update all priorities to match their new positions in the list
         for (int i = 0; i < services.size(); i++) {
-            ICaptchaService service = services.get(i);
+            ProviderService service = services.get(i);
             int currentPriority = service.getPriority();
             int newPriority = i;
-            
+
             if (currentPriority != newPriority) {
                 service.setPriority(newPriority);
             }
         }
-        
+
         // Save the updated configuration
         serviceManager.saveServiceConfigs();
-        
+
         // Refresh the table to reflect the changes
-        fireTableDataChanged();
+        reloadServices();
     }
-    
+
     /**
      * Get the service manager
      * @return The service manager

@@ -1,0 +1,6 @@
+cli.li.resolver.provider.impl.TwoCaptchaProvider
+cli.li.resolver.provider.impl.RuCaptchaProvider
+cli.li.resolver.provider.impl.AntiCaptchaProvider
+cli.li.resolver.provider.impl.CapMonsterProvider
+cli.li.resolver.provider.impl.CapSolverProvider
+cli.li.resolver.provider.impl.SolveCaptchaProvider

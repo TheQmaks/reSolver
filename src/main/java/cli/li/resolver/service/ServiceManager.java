@@ -1,30 +1,49 @@
 package cli.li.resolver.service;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import cli.li.resolver.util.ApiKeyUtils;
 import cli.li.resolver.logger.LoggerService;
 import cli.li.resolver.settings.SettingsManager;
-import cli.li.resolver.captcha.model.CaptchaType;
-import cli.li.resolver.captcha.model.ServiceConfig;
-import cli.li.resolver.captcha.solver.ICaptchaSolver;
-import cli.li.resolver.service.captcha.ICaptchaService;
+import cli.li.resolver.captcha.exception.CaptchaSolverException;
+import cli.li.resolver.provider.CaptchaProvider;
+import cli.li.resolver.provider.ProviderConfig;
+import cli.li.resolver.provider.ProviderRegistry;
+import cli.li.resolver.provider.ProviderService;
+import cli.li.resolver.provider.SolveRequest;
+import cli.li.resolver.provider.selection.CircuitBreaker;
+import cli.li.resolver.provider.selection.ProviderSelector;
 
 /**
- * Manager for CAPTCHA solving services
+ * Manager for CAPTCHA solving services using the new provider system
  */
 public class ServiceManager {
-    private final CaptchaServiceRegistry serviceRegistry;
+    private final ProviderRegistry providerRegistry;
+    private final ProviderSelector providerSelector;
     private final SettingsManager settingsManager;
     private final LoggerService logger;
+    private final List<ProviderService> providerServices;
 
-    public ServiceManager(CaptchaServiceRegistry serviceRegistry, SettingsManager settingsManager) {
-        this.serviceRegistry = serviceRegistry;
+    public ServiceManager(ProviderRegistry providerRegistry, ProviderSelector providerSelector,
+                          SettingsManager settingsManager) {
+        this.providerRegistry = providerRegistry;
+        this.providerSelector = providerSelector;
         this.settingsManager = settingsManager;
         this.logger = LoggerService.getInstance();
 
-        logger.info("ServiceManager", "Service manager initialized");
+        // Create ProviderService instances from the registry's providers
+        this.providerServices = new ArrayList<>();
+        int defaultPriority = 0;
+        for (CaptchaProvider provider : providerRegistry.getAll()) {
+            providerServices.add(new ProviderService(provider, defaultPriority++));
+        }
+
+        logger.info("ServiceManager", "Service manager initialized with " +
+                providerServices.size() + " providers");
 
         // Load service configurations from settings
         loadServiceConfigs();
@@ -35,27 +54,27 @@ public class ServiceManager {
      */
     private void loadServiceConfigs() {
         logger.info("ServiceManager", "Loading service configurations from settings");
-        Map<String, ServiceConfig> configs = settingsManager.loadServiceConfigs();
+        Map<String, ProviderConfig> configs = settingsManager.loadServiceConfigs();
 
-        // Apply configurations to services
-        for (ICaptchaService service : serviceRegistry.getAllServices()) {
-            ServiceConfig config = configs.get(service.getId());
+        // Apply configurations to provider services
+        for (ProviderService ps : providerServices) {
+            ProviderConfig config = configs.get(ps.getId());
             if (config != null) {
-                service.setApiKey(config.getApiKey());
-                service.setEnabled(config.isEnabled());
-                service.setPriority(config.getPriority());
+                ps.setApiKey(config.apiKey());
+                ps.setEnabled(config.enabled());
+                ps.setPriority(config.priority());
 
                 // Mask API key for logging
-                String maskedApiKey = ApiKeyUtils.maskApiKey(config.getApiKey());
+                String maskedApiKey = ApiKeyUtils.maskApiKey(config.apiKey());
 
-                logger.info("ServiceManager", "Configured service: " + service.getName() +
-                        " (ID: " + service.getId() + "), " +
+                logger.info("ServiceManager", "Configured provider: " + ps.getDisplayName() +
+                        " (ID: " + ps.getId() + "), " +
                         "API key: " + maskedApiKey + ", " +
-                        "enabled: " + config.isEnabled() + ", " +
-                        "priority: " + config.getPriority());
+                        "enabled: " + config.enabled() + ", " +
+                        "priority: " + config.priority());
             } else {
-                logger.info("ServiceManager", "No saved configuration for service: " + service.getName() +
-                        " (ID: " + service.getId() + "), using defaults");
+                logger.info("ServiceManager", "No saved configuration for provider: " +
+                        ps.getDisplayName() + " (ID: " + ps.getId() + "), using defaults");
             }
         }
     }
@@ -65,25 +84,24 @@ public class ServiceManager {
      */
     public void saveServiceConfigs() {
         logger.info("ServiceManager", "Saving service configurations to settings");
-        Map<String, ServiceConfig> configs = new HashMap<>();
+        Map<String, ProviderConfig> configs = new HashMap<>();
 
-        // Create configurations from services
-        for (ICaptchaService service : serviceRegistry.getAllServices()) {
-            ServiceConfig config = new ServiceConfig(
-                    service.getApiKey(),
-                    service.isEnabled(),
-                    service.getPriority()
+        for (ProviderService ps : providerServices) {
+            ProviderConfig config = new ProviderConfig(
+                    ps.getApiKey(),
+                    ps.isEnabled(),
+                    ps.getPriority()
             );
-            configs.put(service.getId(), config);
+            configs.put(ps.getId(), config);
 
             // Mask API key for logging
-            String maskedApiKey = ApiKeyUtils.maskApiKey(service.getApiKey());
+            String maskedApiKey = ApiKeyUtils.maskApiKey(ps.getApiKey());
 
-            logger.info("ServiceManager", "Saving configuration for service: " + service.getName() +
-                    " (ID: " + service.getId() + "), " +
+            logger.info("ServiceManager", "Saving configuration for provider: " +
+                    ps.getDisplayName() + " (ID: " + ps.getId() + "), " +
                     "API key: " + maskedApiKey + ", " +
-                    "enabled: " + service.isEnabled() + ", " +
-                    "priority: " + service.getPriority());
+                    "enabled: " + ps.isEnabled() + ", " +
+                    "priority: " + ps.getPriority());
         }
 
         settingsManager.saveServiceConfigs(configs);
@@ -91,117 +109,99 @@ public class ServiceManager {
     }
 
     /**
-     * Get all available services sorted by priority
-     * @return List of services sorted by priority
+     * Solve a CAPTCHA using available providers with fallback
+     * @param solveRequest The solve request
+     * @return Solved CAPTCHA token
+     * @throws CaptchaSolverException If solving fails with all providers
      */
-    public List<ICaptchaService> getServicesInPriorityOrder() {
-        List<ICaptchaService> services = serviceRegistry.getAllServices().stream()
-                .filter(ICaptchaService::isEnabled)
-                .sorted(Comparator.comparingInt(ICaptchaService::getPriority))
-                .collect(Collectors.toList());
+    public String solve(SolveRequest solveRequest) throws CaptchaSolverException {
+        logger.info("ServiceManager", "Solving CAPTCHA type: " + solveRequest.type());
 
-        logger.debug("ServiceManager", "Retrieved " + services.size() + " enabled services in priority order");
-        return services;
-    }
-    
-    /**
-     * Get all available services sorted by priority, including disabled ones
-     * @return List of all services sorted by priority
-     */
-    public List<ICaptchaService> getAllServicesInPriorityOrder() {
-        List<ICaptchaService> services = serviceRegistry.getAllServices().stream()
-                .sorted(Comparator.comparingInt(ICaptchaService::getPriority))
-                .collect(Collectors.toList());
+        // Use ProviderSelector to get ordered providers for the given CAPTCHA type
+        List<ProviderService> orderedProviders = providerSelector.selectOrdered(
+                solveRequest.type(), providerServices);
 
-        logger.debug("ServiceManager", "Retrieved " + services.size() + " services (enabled and disabled) in priority order");
-        return services;
-    }
+        if (orderedProviders.isEmpty()) {
+            throw new CaptchaSolverException("No available provider for CAPTCHA type: " +
+                    solveRequest.type());
+        }
 
-    /**
-     * Get a CAPTCHA solver for the specified type
-     * Uses the first available service that supports the type
-     * @param captchaType CAPTCHA type
-     * @return CAPTCHA solver or null if no service can solve it
-     */
-    public ICaptchaSolver getSolverForType(CaptchaType captchaType) {
-        logger.info("ServiceManager", "Looking for solver for CAPTCHA type: " + captchaType);
+        CaptchaSolverException lastException = null;
 
-        for (ICaptchaService service : getServicesInPriorityOrder()) {
-            // Skip services with invalid API keys
-            if (!service.validateApiKey()) {
-                logger.warning("ServiceManager", "Skipping service " + service.getName() + " due to invalid API key");
-                continue;
-            }
-            
-            // Skip services with zero or negative balance
-            java.math.BigDecimal balance = service.getBalance();
-            if (balance.compareTo(java.math.BigDecimal.ZERO) <= 0) {
-                logger.warning("ServiceManager", "Skipping service " + service.getName() + " due to insufficient balance: " + balance);
-                continue;
-            }
-            
-            ICaptchaSolver solver = service.getSolver(captchaType);
-            if (solver != null) {
-                logger.info("ServiceManager", "Found solver for " + captchaType +
-                        " using service: " + service.getName() + 
-                        " (priority: " + service.getPriority() + 
-                        ", balance: " + balance + ")");
-                return solver;
+        for (ProviderService ps : orderedProviders) {
+            CircuitBreaker breaker = providerSelector.getCircuitBreaker(ps.getId());
+            try {
+                logger.info("ServiceManager", "Trying provider: " + ps.getDisplayName() +
+                        " for type: " + solveRequest.type());
+
+                // Build request with this provider's API key
+                SolveRequest requestWithKey = new SolveRequest(
+                        ps.getApiKey(),
+                        solveRequest.type(),
+                        solveRequest.siteKey(),
+                        solveRequest.pageUrl(),
+                        solveRequest.params()
+                );
+
+                String token = ps.solve(requestWithKey);
+                breaker.recordSuccess();
+
+                logger.info("ServiceManager", "CAPTCHA solved successfully by provider: " +
+                        ps.getDisplayName());
+                return token;
+
+            } catch (CaptchaSolverException e) {
+                breaker.recordFailure();
+                lastException = e;
+                logger.warning("ServiceManager", "Provider " + ps.getDisplayName() +
+                        " failed: " + e.getMessage() + ", trying next provider");
             }
         }
 
-        logger.warning("ServiceManager", "No solver found for CAPTCHA type: " + captchaType);
-        return null;
+        throw new CaptchaSolverException("All providers failed to solve CAPTCHA type: " +
+                solveRequest.type(),
+                lastException);
     }
 
     /**
-     * Check if any enabled service has a valid API key
-     * @return true if at least one service is properly configured
+     * Get all provider services sorted by priority
+     * @return List of all provider services sorted by priority
+     */
+    public List<ProviderService> getAllProviderServices() {
+        List<ProviderService> sorted = new ArrayList<>(providerServices);
+        sorted.sort(Comparator.comparingInt(ProviderService::getPriority));
+        return sorted;
+    }
+
+    /**
+     * Force-refresh balances for all configured providers, bypassing the cache.
+     */
+    public void refreshAllBalances() {
+        logger.info("ServiceManager", "Force-refreshing balances for all configured providers");
+
+        for (ProviderService ps : providerServices) {
+            if (ps.isConfigured()) {
+                ps.forceRefreshBalance();
+                logger.debug("ServiceManager", "Triggered balance refresh for provider: " +
+                        ps.getDisplayName());
+            }
+        }
+    }
+
+    /**
+     * Check if any provider is fully configured and ready to use
+     * @return true if at least one provider is configured
      */
     public boolean hasConfiguredServices() {
-        boolean hasConfigured = serviceRegistry.getAllServices().stream()
-                .anyMatch(service -> service.isEnabled() && service.validateApiKey());
+        boolean hasConfigured = providerServices.stream()
+                .anyMatch(ProviderService::isConfigured);
 
         if (!hasConfigured) {
-            logger.warning("ServiceManager", "No properly configured CAPTCHA services found");
+            logger.warning("ServiceManager", "No properly configured CAPTCHA providers found");
         } else {
-            logger.debug("ServiceManager", "Found properly configured CAPTCHA services");
+            logger.debug("ServiceManager", "Found properly configured CAPTCHA providers");
         }
 
         return hasConfigured;
-    }
-
-    /**
-     * Check and update balances for all enabled services
-     */
-    public void updateAllBalances() {
-        logger.info("ServiceManager", "Updating balances for all enabled services");
-
-        for (ICaptchaService service : serviceRegistry.getAllServices()) {
-            if (service.isEnabled()) {
-                updateBalance(service);
-            }
-        }
-
-        logger.info("ServiceManager", "All balances updated");
-    }
-    
-    /**
-     * Update the balance for a specific service
-     * @param service The service to update the balance for
-     */
-    public void updateBalance(ICaptchaService service) {
-        if (service != null && service.isEnabled() && service.validateApiKey()) {
-            try {
-                logger.info("ServiceManager", "Checking balance for service: " + service.getName());
-                service.getBalance(); // This will update the balance internally
-                logger.info("ServiceManager", "Balance for " + service.getName() + ": " + service.getBalance());
-            } catch (Exception e) {
-                logger.error("ServiceManager", "Error checking balance for " + service.getName() + ": " + e.getMessage(), e);
-                // Ignore exceptions during balance check
-            }
-        } else if (service != null) {
-            logger.warning("ServiceManager", "Cannot update balance for " + service.getName() + ": Service is disabled or has invalid API key");
-        }
     }
 }

@@ -1,20 +1,25 @@
 package cli.li.resolver.thread;
 
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.List;
-import java.util.ArrayList;
 
 import cli.li.resolver.settings.SettingsManager;
 
 /**
- * Manager for thread pool used to solve CAPTCHAs
+ * Manager for thread pool used to solve CAPTCHAs.
+ * Uses ConcurrentLinkedQueue for tracking active tasks instead of synchronized ArrayList.
  */
 public class ThreadPoolManager {
     private final ExecutorService threadPool;
     private final SettingsManager settingsManager;
     private final AtomicInteger activeThreads = new AtomicInteger(0);
-    private final List<Future<?>> activeTasks = new ArrayList<>();
+    private final ConcurrentLinkedQueue<Future<?>> activeTasks = new ConcurrentLinkedQueue<>();
 
     public ThreadPoolManager(SettingsManager settingsManager) {
         this.settingsManager = settingsManager;
@@ -40,22 +45,20 @@ public class ThreadPoolManager {
      * @return Future representing the result
      */
     public <T> Future<T> submit(Callable<T> task) {
+        // Clean completed futures before adding new ones
+        activeTasks.removeIf(Future::isDone);
+
         activeThreads.incrementAndGet();
         Future<T> future = threadPool.submit(() -> {
             try {
                 return task.call();
             } finally {
                 activeThreads.decrementAndGet();
-                synchronized (activeTasks) {
-                    activeTasks.removeIf(f -> f.isDone() || f.isCancelled());
-                }
             }
         });
-        
-        synchronized (activeTasks) {
-            activeTasks.add(future);
-        }
-        
+
+        activeTasks.add(future);
+
         return future;
     }
 
@@ -74,30 +77,22 @@ public class ThreadPoolManager {
     public int getActiveThreadCount() {
         return activeThreads.get();
     }
-    
+
     /**
      * Cancel all running tasks
      * @return Number of tasks cancelled
      */
     public int cancelAllTasks() {
         int cancelledCount = 0;
-        
-        synchronized (activeTasks) {
-            // Remove all completed tasks from the list
-            activeTasks.removeIf(future -> future.isDone() || future.isCancelled());
-            
-            // Cancel all remaining active tasks
-            for (Future<?> future : activeTasks) {
-                if (!future.isDone() && !future.isCancelled()) {
-                    future.cancel(true);
-                    cancelledCount++;
-                }
+
+        Future<?> future;
+        while ((future = activeTasks.poll()) != null) {
+            if (!future.isDone() && !future.isCancelled()) {
+                future.cancel(true);
+                cancelledCount++;
             }
-            
-            // Clear the task list
-            activeTasks.clear();
         }
-        
+
         return cancelledCount;
     }
 
@@ -107,7 +102,7 @@ public class ThreadPoolManager {
     public void shutdown() {
         // Cancel all tasks on shutdown
         cancelAllTasks();
-        
+
         threadPool.shutdown();
         try {
             if (!threadPool.awaitTermination(5, TimeUnit.SECONDS)) {
